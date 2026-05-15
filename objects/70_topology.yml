@@ -1,0 +1,17 @@
+---
+apiVersion: infrahub.app/v1
+kind: Object
+spec:
+  kind: TopologyMplsBackbone
+  data:
+    - name: mpls-backbone-1
+      description: OpsMillNet demo MPLS backbone (EMEA).
+      isis_area: "49.0001"
+      isis_level: level-2
+      location: EMEA
+      asn: OpsMillNet-AS
+      pes:
+        - pe-lon-arista
+        - pe-fra-cisco
+        - pe-ams-juniper
+        - pe-par-nokia
