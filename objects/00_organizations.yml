@@ -1,0 +1,36 @@
+---
+apiVersion: infrahub.app/v1
+kind: Object
+spec:
+  kind: OrganizationManufacturer
+  data:
+    - name: Arista
+      description: Arista Networks
+    - name: Cisco
+      description: Cisco Systems
+    - name: Juniper
+      description: Juniper Networks
+    - name: Nokia
+      description: Nokia
+
+---
+apiVersion: infrahub.app/v1
+kind: Object
+spec:
+  kind: OrganizationProvider
+  data:
+    - name: OpsMillNet
+      description: Demo service provider operating the MPLS backbone.
+
+---
+apiVersion: infrahub.app/v1
+kind: Object
+spec:
+  kind: OrganizationGeneric
+  data:
+    - name: acme
+      description: ACME Corp (customer).
+    - name: contoso
+      description: Contoso Ltd (customer).
+    - name: globex
+      description: Globex Industries (customer).
