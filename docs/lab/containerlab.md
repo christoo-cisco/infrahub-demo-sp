@@ -1,0 +1,153 @@
+# Containerlab
+
+This page covers the optional containerlab integration: what runs, which PEs
+are substituted, how to deploy, and known limitations.
+
+---
+
+## Overview
+
+The containerlab artifact (`clab-mpls-topology`) is generated from Infrahub
+data by the `clab_topology` transform and renders a valid containerlab YAML
+topology. It wires up four PE nodes and two CE nodes for end-to-end L3VPN
+testing.
+
+The topology is written to `lab/mpls-topology.clab.yml` by
+`invoke lab.deploy` before containerlab brings it up.
+
+---
+
+## Node map
+
+| Bootstrap PE | Vendor | Containerlab image | Notes |
+|---|---|---|---|
+| `pe-lon-arista` | Arista EOS | `ceos:latest` | Full config push via `invoke lab.push-arista` |
+| `pe-fra-cisco` | Cisco IOS-XR | — | Not in lab v1 (out of scope) |
+| `pe-ams-juniper` | Juniper Junos | — | Not in lab v1 (out of scope) |
+| `pe-par-nokia` | Nokia SR OS | SR Linux (`ghcr.io/nokia/srlinux`) | SR Linux used in place of SR OS (see below) |
+
+CE nodes run a generic Linux image (`ghcr.io/hellt/network-multitool`) and
+simulate customer CPE with a loopback address.
+
+---
+
+## SR OS → SR Linux substitution
+
+Nokia's containerlab-friendly image is **SR Linux**, not SR OS. SR OS is
+available only with a paid Nokia licence and is not suitable for a public
+demo. The demo uses SR Linux as a stand-in for the Nokia PE. The Infrahub
+data model remains `nokia_sros` for schema consistency; the containerlab
+artifact swaps in the SR Linux image automatically.
+
+The SR Linux node boots with the generated Nokia SR OS configuration loaded
+as a startup config, but **SR Linux does not parse SR OS CLI syntax**. Config
+push to the Nokia PE is therefore not available in v1 (see [Known gaps](#known-gaps)).
+
+---
+
+## Prerequisites
+
+- containerlab >= 0.50
+- Docker with access to pull:
+  - `ceos:latest` (requires an Arista account and local image import — see
+    https://containerlab.dev/manual/kinds/ceos/)
+  - `ghcr.io/nokia/srlinux` (public)
+  - `ghcr.io/hellt/network-multitool` (public)
+- A running Infrahub instance with bootstrap data loaded (`invoke init`)
+
+---
+
+## Deploy
+
+```bash
+# Fetch the clab artifact from Infrahub and write lab/mpls-topology.clab.yml,
+# then call containerlab deploy.
+uv run invoke lab.deploy
+```
+
+Expected output:
+
+```
+[INFO] Fetching clab-mpls-topology artifact from Infrahub...
+[INFO] Writing lab/mpls-topology.clab.yml
+[INFO] Running: containerlab deploy -t lab/mpls-topology.clab.yml
+...
++---+------------------+-----------+------------------------------+
+| # | Name             | Kind      | Image                        |
++---+------------------+-----------+------------------------------+
+| 1 | pe-lon-arista    | ceos      | ceos:latest                  |
+| 2 | pe-par-nokia-lab | srl       | ghcr.io/nokia/srlinux        |
+| 3 | ce-lon           | linux     | ghcr.io/hellt/network-multitool |
+| 4 | ce-par           | linux     | ghcr.io/hellt/network-multitool |
++---+------------------+-----------+------------------------------+
+```
+
+---
+
+## Push Arista config
+
+After the lab is up, push the Arista EOS config artifact from Infrahub:
+
+```bash
+uv run invoke lab.push-arista
+```
+
+This fetches the `pe-lon-arista` artifact from Infrahub via the SDK and
+applies it over the containerlab management network using `pyeapi` / SSH.
+
+The command shows a diff of what changed. Verify with:
+
+```bash
+containerlab exec -t lab/mpls-topology.clab.yml --label clab-node-name=pe-lon-arista \
+  --cmd "show bgp vpn-ipv4 summary"
+```
+
+---
+
+## Destroy
+
+```bash
+uv run invoke lab.destroy
+```
+
+This calls `containerlab destroy` and removes the generated topology file.
+
+---
+
+## Lab status
+
+```bash
+uv run invoke lab.status
+```
+
+Shows container health without modifying anything.
+
+---
+
+## Known gaps
+
+| Gap | Details |
+|---|---|
+| Nokia SR Linux config push | SR Linux uses a different CLI/API from SR OS. The Nokia config artifact renders SR OS syntax and cannot be applied directly to SR Linux. Config validation for the Nokia PE is demo-only. |
+| Cisco / Juniper PEs | IOS-XR and Junos container images require vendor licences; these PEs are absent from the v1 lab topology. |
+| CE routing | CE nodes have loopbacks but no BGP daemon configured. Confirming end-to-end L3VPN reachability requires manual CE config. |
+| cEOS image | The Arista cEOS image must be imported manually (`docker import`) before containerlab can start the node. |
+
+---
+
+## Image pull failures
+
+If containerlab fails with `Error response from daemon: pull access denied`:
+
+1. **SR Linux** (`ghcr.io/nokia/srlinux`) — requires a GitHub login:
+   `docker login ghcr.io -u <github-user> -p <PAT>`
+
+2. **cEOS** — the image is not on any public registry. Download the `.tar.xz`
+   from https://www.arista.com/en/support/software-download and import it:
+
+   ```bash
+   docker import cEOS-lab-4.30.0F.tar.xz ceos:latest
+   ```
+
+3. **network-multitool** (`ghcr.io/hellt/network-multitool`) — public image;
+   if it fails, check Docker Hub rate limits or mirror via a local registry.
