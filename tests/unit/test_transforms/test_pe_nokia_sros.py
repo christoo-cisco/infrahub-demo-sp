@@ -39,3 +39,12 @@ async def test_renders_bgp_vpn_families() -> None:
     assert "vpn-ipv4" in rendered
     assert "vpn-ipv6" in rendered
     assert 'group "ibgp-mesh"' in rendered
+
+
+@pytest.mark.asyncio
+async def test_nokia_system_id_extracted_from_net() -> None:
+    """system-id is derived from NET parts [2].[3].[4], not [1].[2].[3]."""
+    rendered = await PeNokiaSrOs.__new__(PeNokiaSrOs).transform(
+        pe_fixture("pe-par-nokia", "10.0.0.4/32", "49.0001.0100.0000.0004.00")
+    )
+    assert "system-id 0100.0000.0004" in rendered
