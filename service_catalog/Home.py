@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-import streamlit as st  # type: ignore[import-untyped]
-
+import streamlit as st
 from utils import display_logo
 
 st.set_page_config(
@@ -16,7 +15,9 @@ st.set_page_config(
 
 display_logo()
 
-dashboard = st.Page("pages/0_Dashboard.py", title="Dashboard", icon="📊", default=True, url_path="dashboard")
+dashboard = st.Page(
+    "pages/0_Dashboard.py", title="Dashboard", icon="📊", default=True, url_path="dashboard"
+)
 create_l3vpn = st.Page("pages/1_Create_L3VPN.py", title="Create L3VPN", icon="🔗")
 
 pg = st.navigation({

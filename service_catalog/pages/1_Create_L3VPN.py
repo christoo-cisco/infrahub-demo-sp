@@ -6,8 +6,7 @@ import os
 import uuid
 from typing import Any
 
-import streamlit as st  # type: ignore[import-untyped]
-
+import streamlit as st
 from utils import client_for, run_async, wait_for_pipeline
 from utils.validators import validate_create_l3vpn_form
 
@@ -72,7 +71,7 @@ if submitted:
         vpn_id = int(run_async(pool.allocate_resource(identifier=f"catalog-{uuid.uuid4()}")))
 
         branch_name = f"service/l3vpn-{vpn_id}"
-        branch = run_async(client_main.branch.create(name=branch_name, sync_with_git=False))
+        branch = run_async(client_main.branch.create(branch_name, sync_with_git=False))
         client = client_for(branch=branch_name)
 
         vpn = run_async(client.create(

@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import os
 
-import pandas as pd  # type: ignore[import-untyped]
-import streamlit as st  # type: ignore[import-untyped]
-
+import pandas as pd
+import streamlit as st
 from utils import client_for, run_async
 
 st.title("L3VPN Dashboard")

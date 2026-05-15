@@ -8,8 +8,9 @@ import time
 from pathlib import Path
 from typing import Any
 
-import streamlit as st  # type: ignore[import-untyped]
+import streamlit as st
 from infrahub_sdk.client import InfrahubClient
+from infrahub_sdk.config import Config
 
 ASSETS_DIR = Path(__file__).resolve().parent.parent / "assets"
 
@@ -25,11 +26,12 @@ def client_for(branch: str = "main") -> InfrahubClient:
     Returns:
         A configured InfrahubClient instance.
     """
-    return InfrahubClient(
+    config = Config(
         address=os.environ["INFRAHUB_ADDRESS"],
         api_token=os.environ["INFRAHUB_API_TOKEN"],
         default_branch=branch,
     )
+    return InfrahubClient(config=config)
 
 
 def display_logo() -> None:
