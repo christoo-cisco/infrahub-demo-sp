@@ -8,7 +8,6 @@ from transforms.pe_juniper_junos import PeJuniperJunos
 
 from .fixtures import pe_fixture
 
-
 FIXTURE = pe_fixture(
     name="pe-ams-juniper",
     loopback="10.0.0.3/32",

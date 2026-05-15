@@ -8,7 +8,6 @@ from transforms.pe_cisco_iosxr import PeCiscoIosXr
 
 from .fixtures import pe_fixture
 
-
 FIXTURE = pe_fixture(
     name="pe-fra-cisco",
     loopback="10.0.0.2/32",

@@ -6,7 +6,6 @@ import pytest
 
 from transforms.pe_arista_eos import PeAristaEos
 
-
 FIXTURE = {
     "DcimDevice": {
         "edges": [
@@ -29,7 +28,12 @@ FIXTURE = {
                                     "mtu": {"value": 1500},
                                     "ip_addresses": {
                                         "edges": [
-                                            {"node": {"address": {"value": "10.0.0.1/32"}, "vrf": None}}
+                                            {
+                                                "node": {
+                                                    "address": {"value": "10.0.0.1/32"},
+                                                    "vrf": None,
+                                                }
+                                            }
                                         ]
                                     },
                                 }
@@ -45,7 +49,12 @@ FIXTURE = {
                                     "mtu": {"value": 9000},
                                     "ip_addresses": {
                                         "edges": [
-                                            {"node": {"address": {"value": "10.1.0.0/31"}, "vrf": None}}
+                                            {
+                                                "node": {
+                                                    "address": {"value": "10.1.0.0/31"},
+                                                    "vrf": None,
+                                                }
+                                            }
                                         ]
                                     },
                                 }

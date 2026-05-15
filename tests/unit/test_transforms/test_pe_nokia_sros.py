@@ -8,7 +8,6 @@ from transforms.pe_nokia_sros import PeNokiaSrOs
 
 from .fixtures import pe_fixture
 
-
 FIXTURE = pe_fixture(
     name="pe-nyc-nokia",
     loopback="10.0.0.4/32",
