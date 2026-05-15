@@ -73,8 +73,64 @@ def test(c: Context, kind: str = "unit") -> None:
         c.run(f"uv run pytest tests/{kind}/", pty=True)
 
 
+LAB_DIR = REPO_ROOT / "lab"
+LAB_TOPO = LAB_DIR / "mpls-backbone.clab.yml"
+
+
+def _fetch_artifact(c: Context, artifact_name: str, dest: Path) -> None:
+    """Download the latest artifact content into ``dest``."""
+    c.run(
+        f"uv run infrahubctl artifact get {artifact_name} > {shlex.quote(str(dest))}",
+        pty=True,
+    )
+
+
 # Lab namespace (filled in Phase 8)
 lab = Collection("lab")
+
+
+@task(name="deploy")
+def lab_deploy(c: Context) -> None:
+    """Fetch the clab topology artifact and run containerlab deploy."""
+    LAB_DIR.mkdir(exist_ok=True)
+    _fetch_artifact(c, "clab-mpls-topology", LAB_TOPO)
+    c.run(f"containerlab deploy --topo {LAB_TOPO}", pty=True)
+
+
+@task(name="destroy")
+def lab_destroy(c: Context) -> None:
+    """Tear down the running lab."""
+    if not LAB_TOPO.exists():
+        print(f"No lab topology at {LAB_TOPO}; nothing to destroy.")
+        return
+    c.run(f"containerlab destroy --topo {LAB_TOPO}", pty=True)
+
+
+@task(name="status")
+def lab_status(c: Context) -> None:
+    """Show running clab containers."""
+    if not LAB_TOPO.exists():
+        print(f"No lab topology at {LAB_TOPO}.")
+        return
+    c.run(f"containerlab inspect --topo {LAB_TOPO}", pty=True)
+
+
+@task(name="push-arista")
+def lab_push_arista(c: Context) -> None:
+    """Push the rendered Arista config to the running cEOS lab node."""
+    LAB_DIR.mkdir(exist_ok=True)
+    arista_cfg = LAB_DIR / "pe-lon-arista.cfg"
+    _fetch_artifact(c, "pe-arista-eos", arista_cfg)
+    c.run(
+        f"uv run python scripts/push_arista.py {shlex.quote(str(arista_cfg))} pe-lon-arista",
+        pty=True,
+    )
+
+
+lab.add_task(lab_deploy)
+lab.add_task(lab_destroy)
+lab.add_task(lab_status)
+lab.add_task(lab_push_arista)
 
 ns = Collection()
 ns.add_task(start)
