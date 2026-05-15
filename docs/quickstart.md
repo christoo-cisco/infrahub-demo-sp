@@ -1,0 +1,53 @@
+# Quick Start
+
+This page gets you from clone to a running demo in about 10 minutes.
+
+## Prerequisites
+
+- Docker / Docker Compose
+- Python 3.10+
+- `uv` (https://docs.astral.sh/uv/)
+- (Optional) containerlab >= 0.50
+
+## 1. Clone and install
+
+```bash
+git clone https://github.com/opsmill/sp-demo-mpls-l3vpn.git
+cd sp-demo-mpls-l3vpn
+cp .env.example .env
+uv sync
+```
+
+## 2. Start Infrahub and bootstrap data
+
+```bash
+uv run invoke init
+```
+
+This destroys any prior state, starts the containers, loads the schemas,
+the menu, all bootstrap objects (4 PEs, full backbone, resource pools),
+and generates schema protocol bindings.
+
+Wait ~30 s after the containers come up before bootstrap runs.
+
+## 3. Open the Infrahub UI
+
+Visit http://localhost:8000 — log in with `admin` / `infrahub`. The
+sidebar menu shows **Service Catalog → L3 VPNs**, **Topology → MPLS
+Backbones**, and **MPLS** (ISIS / LDP / MP-BGP processes).
+
+## 4. Start the Streamlit Service Catalog
+
+```bash
+uv run invoke start --catalog --build
+```
+
+Visit http://localhost:8501. Create your first L3VPN.
+
+## 5. (Optional) Bring up the containerlab
+
+See [`lab/containerlab.md`](lab/containerlab.md).
+
+## Troubleshooting
+
+See [`troubleshooting.md`](troubleshooting.md).
