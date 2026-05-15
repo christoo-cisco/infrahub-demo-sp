@@ -1,0 +1,200 @@
+# Schema Reference
+
+This page covers the SP-demo-specific schema nodes defined in `schemas/sp/`.
+Base and extension schemas (devices, interfaces, IPAM, routing) come from
+the Infrahub schema-library and are not repeated here.
+
+For the overall schema loading order and layering, see [architecture.md](architecture.md).
+
+---
+
+## ServiceL3Vpn
+
+**Namespace:** `Service` · **Kind:** `ServiceL3Vpn`
+**File:** `schemas/sp/service_l3vpn.yml`
+
+Represents a single L3VPN service offered to a tenant. One `ServiceL3Vpn`
+has one or more `ServiceL3VpnSite` attachments (component relationship).
+
+### Attributes
+
+| Field | Kind | Required | Description | Who sets it |
+|---|---|---|---|---|
+| `name` | Text | Required | Unique human name for the VPN (e.g. `acme-prod`) | User |
+| `description` | Text | Optional | Free-text description | User |
+| `vpn_id` | Number | Required | Unique integer allocated from `vpn_id_pool`. Used to derive RD/RT as `<asn>:<vpn_id>` | User (catalog allocates from pool) |
+| `address_family` | Dropdown | Required | `ipv4` or `ipv4_ipv6`. Defaults to `ipv4` | User |
+| `status` | Dropdown | Required | `draft` → `active` → `decommissioned`. Defaults to `draft` | User sets `draft`; generator promotes to `active` |
+
+### Relationships
+
+| Field | Peer | Cardinality | Required | Description | Who sets it |
+|---|---|---|---|---|---|
+| `tenant` | `OrganizationGeneric` | one | Required | Owning organisation | User |
+| `vrf` | `IpamVRF` | one | Optional | VRF materialised by the generator | Generator |
+| `sites` | `ServiceL3VpnSite` | many | Optional | PE attachment points (component) | User / catalog |
+
+---
+
+## ServiceL3VpnSite
+
+**Namespace:** `Service` · **Kind:** `ServiceL3VpnSite`
+**File:** `schemas/sp/service_l3vpn.yml`
+
+Represents a single PE attachment of an L3VPN to a customer subnet. One site
+= one PE + one customer-facing interface + a /30 PE-CE link.
+
+### Attributes
+
+| Field | Kind | Required | Description | Who sets it |
+|---|---|---|---|---|
+| `name` | Text | Required | Unique within a given `l3vpn` (uniqueness constraint) | User |
+| `routing_protocol` | Dropdown | Required | `ebgp`, `static`, or `connected` | User |
+| `bgp_peer_asn` | Number | Optional | Customer BGP ASN (required when `routing_protocol = ebgp`) | User |
+| `static_routes` | JSON | Optional | List of static routes to inject into the VRF | User |
+| `status` | Dropdown | Required | `provisioning` → `active` → `decommissioned`. Defaults to `provisioning` | Generator promotes to `active` |
+
+### Relationships
+
+| Field | Peer | Cardinality | Required | Description | Who sets it |
+|---|---|---|---|---|---|
+| `l3vpn` | `ServiceL3Vpn` | one | Required | Parent VPN (parent relationship) | User / catalog |
+| `pe` | `DcimDevice` | one | Required | PE router for this attachment | User |
+| `pe_interface` | `InterfacePhysical` | one | Optional | PE-facing physical interface | Generator allocates from free interfaces |
+| `customer_subnet` | `IpamPrefix` | one | Required | Customer prefix to be placed into the VRF | User |
+| `pe_address` | `IpamIPAddress` | one | Optional | PE IP on the PE-CE /30 link | Generator allocates from `pe_ce_pool` |
+| `ce_address` | `IpamIPAddress` | one | Optional | CE IP on the PE-CE /30 link | Generator allocates from `pe_ce_pool` |
+
+---
+
+## TopologyMplsBackbone
+
+**Namespace:** `Topology` · **Kind:** `TopologyMplsBackbone`
+**File:** `schemas/sp/topology_mpls.yml`
+
+Inherits from `TopologyGeneric`. Represents the MPLS backbone as a whole —
+one row per backbone domain. The demo has exactly one row: `mpls-backbone-1`.
+
+### Attributes
+
+| Field | Kind | Required | Description | Who sets it |
+|---|---|---|---|---|
+| `name` | Text | Required | Unique backbone name | User (bootstrap) |
+| `isis_area` | Text | Required | ISIS area ID (default `49.0001`) | User (bootstrap) |
+| `isis_level` | Dropdown | Required | `level-1`, `level-2`, or `level-1-2` (default `level-2`) | User (bootstrap) |
+
+### Relationships
+
+| Field | Peer | Cardinality | Required | Description | Who sets it |
+|---|---|---|---|---|---|
+| `asn` | `RoutingAutonomousSystem` | one | Required | Provider ASN used for RD/RT derivation | User (bootstrap) |
+| `pes` | `DcimDevice` | many | Optional | All PE routers in this backbone | User (bootstrap) |
+
+---
+
+## MplsIsisProcess
+
+**Namespace:** `Mpls` · **Kind:** `MplsIsisProcess`
+**File:** `schemas/sp/mpls.yml`
+
+Inherits from `RoutingProtocol`. One row per PE representing the IS-IS
+routing process. The `device` relationship is inherited from `RoutingProtocol`.
+
+### Attributes
+
+| Field | Kind | Required | Description | Who sets it |
+|---|---|---|---|---|
+| `area_id` | Text | Required | IS-IS area (default `49.0001`) | User (bootstrap) |
+| `level` | Dropdown | Required | `level-1`, `level-2`, or `level-1-2` (default `level-2`) | User (bootstrap) |
+| `net_id` | Text | Required | ISO NET identifier (e.g. `49.0001.0100.0000.0001.00`) | User (bootstrap) |
+
+### Relationships
+
+| Field | Peer | Cardinality | Required | Description |
+|---|---|---|---|---|
+| `interfaces` | `InterfacePhysical` | many | Optional | Backbone interfaces running IS-IS |
+
+### Inherited from RoutingProtocol
+
+| Field | Description |
+|---|---|
+| `device` | The PE device this process belongs to |
+| `description` | Free-text description |
+| `status` | `active` / `inactive` |
+
+---
+
+## MplsLdpProcess
+
+**Namespace:** `Mpls` · **Kind:** `MplsLdpProcess`
+**File:** `schemas/sp/mpls.yml`
+
+Inherits from `RoutingProtocol`. One row per PE representing the LDP
+label distribution process.
+
+### Attributes
+
+| Field | Kind | Required | Description | Who sets it |
+|---|---|---|---|---|
+| `router_id` | Text | Required | LDP router-ID (typically the Loopback0 IP) | User (bootstrap) |
+
+### Relationships
+
+| Field | Peer | Cardinality | Required | Description |
+|---|---|---|---|---|
+| `transport_address` | `IpamIPAddress` | one | Optional | LDP transport address override |
+| `interfaces` | `InterfacePhysical` | many | Optional | Backbone interfaces running LDP |
+
+---
+
+## MplsBgpProcess
+
+**Namespace:** `Mpls` · **Kind:** `MplsBgpProcess`
+**File:** `schemas/sp/mpls.yml`
+
+Inherits from `RoutingProtocol`. One row per PE representing the MP-BGP
+overlay process carrying VPNv4 / VPNv6 address families.
+
+### Attributes
+
+| Field | Kind | Required | Description | Who sets it |
+|---|---|---|---|---|
+| `router_id` | Text | Required | BGP router-ID (typically the Loopback0 IP) | User (bootstrap) |
+| `address_families` | List | Required | MP-BGP address families enabled (e.g. `["vpnv4", "vpnv6"]`) | User (bootstrap) |
+
+### Relationships
+
+| Field | Peer | Cardinality | Required | Description |
+|---|---|---|---|---|
+| `sessions` | `RoutingBGPSession` | many | Optional | iBGP sessions for this process |
+
+---
+
+## Resource Pools
+
+The following pools are bootstrapped in `objects/50_pools.yml` and consumed
+by the generator and the Streamlit catalog:
+
+| Pool name | Kind | Purpose | Allocation unit |
+|---|---|---|---|
+| `vpn_id_pool` | `CoreNumberPool` | Globally unique VPN IDs | Integer (default range 100–65000) |
+| `pe_loopback_pool` | `CoreIPPrefixPool` | Loopback /32 addresses | /32 from `10.0.0.0/24` |
+| `backbone_p2p_pool` | `CoreIPPrefixPool` | Backbone p2p /31 links | /31 from `10.1.0.0/16` |
+| `pe_ce_pool` | `CoreIPPrefixPool` | PE-CE /30 links per L3VPN site | /30 from `10.100.0.0/16` |
+
+---
+
+## User-provided vs generator-filled summary
+
+The following table consolidates which fields an operator must supply and which
+the `L3VpnGenerator` fills in automatically:
+
+| Object | Field | Source |
+|---|---|---|
+| `ServiceL3Vpn` | `name`, `vpn_id`, `address_family`, `tenant` | User / catalog |
+| `ServiceL3Vpn` | `vrf`, `status = active` | Generator |
+| `ServiceL3VpnSite` | `name`, `pe`, `routing_protocol`, `bgp_peer_asn`, `customer_subnet`, `l3vpn` | User / catalog |
+| `ServiceL3VpnSite` | `pe_interface`, `pe_address`, `ce_address`, `status = active` | Generator |
+| `IpamVRF` | all | Generator |
+| `IpamIPAddress` (PE-CE) | all | Generator |
+| `RoutingBGPSession` (PE-CE) | all (only when `routing_protocol = ebgp`) | Generator |
