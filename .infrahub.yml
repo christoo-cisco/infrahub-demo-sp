@@ -12,9 +12,17 @@ menus:
 
 queries:
   - {name: l3vpn, file_path: queries/service/l3vpn.gql}
-python_transforms: []
+  - {name: pe, file_path: queries/config/pe.gql}
+python_transforms:
+  - {name: pe_arista_eos, class_name: PeAristaEos, file_path: transforms/pe_arista_eos.py}
 jinja2_transforms: []
-artifact_definitions: []
+artifact_definitions:
+  - name: pe-arista-eos-config
+    artifact_name: pe-arista-eos
+    content_type: text/plain
+    targets: pe_arista_eos
+    transformation: pe_arista_eos
+    parameters: {device: name__value}
 generator_definitions:
   - name: generate_l3vpn
     file_path: generators/generate_l3vpn.py
