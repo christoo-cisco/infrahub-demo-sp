@@ -1,0 +1,40 @@
+query Clab($name: String!) {
+  TopologyMplsBackbone(name__value: $name) {
+    edges {
+      node {
+        name { value }
+        pes {
+          edges {
+            node {
+              id
+              name { value }
+              platform { node { name { value } containerlab_os { value } } }
+              interfaces {
+                edges {
+                  node {
+                    __typename
+                    name { value }
+                    role { value }
+                    description { value }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  ServiceL3VpnSite {
+    edges {
+      node {
+        name { value }
+        pe { node { name { value } platform { node { name { value } } } } }
+        pe_interface { node { name { value } } }
+        pe_address { node { address { value } } }
+        ce_address { node { address { value } } }
+        l3vpn { node { name { value } } }
+      }
+    }
+  }
+}
