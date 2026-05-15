@@ -1,39 +1,38 @@
-{%- import '_macros.j2' as m -%}
-{%- set device = data.DcimDevice.edges[0].node -%}
-{%- set isis = data.MplsIsisProcess.edges[0].node -%}
-{%- set ldp = data.MplsLdpProcess.edges[0].node -%}
-{%- set bgp = data.MplsBgpProcess.edges[0].node -%}
-{%- set sites = data.ServiceL3VpnSite.edges -%}
-{#- Derive ISIS system-id from NET ID (last 12 hex chars before the trailing .00) #}
-{%- set net_parts = isis.net_id.value.split('.') -%}
-{%- set system_id_raw = net_parts[1] ~ net_parts[2] ~ net_parts[3] -%}
-{%- set system_id = system_id_raw[0:4] ~ '.' ~ system_id_raw[4:8] ~ '.' ~ system_id_raw[8:12] -%}
+{% import '_macros.j2' as m %}
+{% set device = data.DcimDevice.edges[0].node %}
+{% set isis = data.MplsIsisProcess.edges[0].node %}
+{% set ldp = data.MplsLdpProcess.edges[0].node %}
+{% set bgp = data.MplsBgpProcess.edges[0].node %}
+{% set sites = data.ServiceL3VpnSite.edges %}
+{#- Derive ISIS system-id from NET ID: parts [2].[3].[4] for xx.aaaa.bbbb.cccc.dddd.00 #}
+{% set net_parts = isis.net_id.value.split('.') %}
+{% set system_id = net_parts[2] ~ '.' ~ net_parts[3] ~ '.' ~ net_parts[4] %}
 # Nokia SR OS configuration for {{ device.name.value }}
 configure {
     router "Base" {
         interface "system" {
-{% for iface in device.interfaces.edges if iface.node.name.value == 'Loopback0' -%}
-{%- for ip in iface.node.ip_addresses.edges %}
+{% for iface in device.interfaces.edges if iface.node.name.value == 'Loopback0' %}
+{% for ip in iface.node.ip_addresses.edges %}
             ipv4 {
                 primary {
                     address {{ m.ip_only(ip.node.address.value) }};
                     prefix-length 32;
                 }
             }
-{%- endfor %}
-{%- endfor %}
+{% endfor %}
+{% endfor %}
         }
 {% for iface in device.interfaces.edges if iface.node.role.value == 'core' %}
         interface "{{ iface.node.name.value }}" {
             port {{ iface.node.name.value }};
-{%- for ip in iface.node.ip_addresses.edges %}
+{% for ip in iface.node.ip_addresses.edges %}
             ipv4 {
                 primary {
                     address {{ m.ip_only(ip.node.address.value) }};
                     prefix-length 31;
                 }
             }
-{%- endfor %}
+{% endfor %}
         }
 {% endfor %}
         isis 1 {
@@ -61,11 +60,11 @@ configure {
             group "ibgp-mesh" {
                 type internal;
                 local-as {{ device.asn.node.asn.value }};
-{% for iface in device.interfaces.edges if iface.node.name.value == 'Loopback0' -%}
-{%- for ip in iface.node.ip_addresses.edges %}
+{% for iface in device.interfaces.edges if iface.node.name.value == 'Loopback0' %}
+{% for ip in iface.node.ip_addresses.edges %}
                 local-address {{ m.ip_only(ip.node.address.value) }};
-{%- endfor %}
-{%- endfor %}
+{% endfor %}
+{% endfor %}
                 family {
                     vpn-ipv4;
                     vpn-ipv6;
@@ -84,11 +83,11 @@ configure {
         }
     }
 {% set seen_vpns = [] %}
-{% for site_edge in sites -%}
-{%- set site = site_edge.node -%}
-{%- set vpn = site.l3vpn.node -%}
-{%- if vpn.name.value not in seen_vpns -%}
-{%- set _ = seen_vpns.append(vpn.name.value) %}
+{% for site_edge in sites %}
+{% set site = site_edge.node %}
+{% set vpn = site.l3vpn.node %}
+{% if vpn.name.value not in seen_vpns %}
+{% set _ = seen_vpns.append(vpn.name.value) %}
     service {
         vprn "{{ vpn.name.value }}" {
             service-id {{ vpn.vpn_id.value }};
@@ -98,7 +97,7 @@ configure {
                 import-community "target:{{ vpn.vrf.node.import_rt.node.name.value }}";
                 export-community "target:{{ vpn.vrf.node.export_rt.node.name.value }}";
             }
-{%- for s in sites if s.node.l3vpn.node.name.value == vpn.name.value %}
+{% for s in sites if s.node.l3vpn.node.name.value == vpn.name.value %}
             interface "{{ s.node.pe_interface.node.name.value }}" {
                 ipv4 {
                     primary {
@@ -109,7 +108,7 @@ configure {
                 sap "{{ s.node.pe_interface.node.name.value }}:0" {
                 }
             }
-{%- if s.node.routing_protocol.value == 'ebgp' %}
+{% if s.node.routing_protocol.value == 'ebgp' %}
             bgp {
                 group "ce" {
                     peer-as {{ s.node.bgp_peer_asn.value }};
@@ -117,10 +116,10 @@ configure {
                     }
                 }
             }
-{%- endif %}
-{%- endfor %}
+{% endif %}
+{% endfor %}
         }
     }
-{% endif -%}
+{% endif %}
 {% endfor %}
 }
