@@ -14,6 +14,10 @@ queries:
   - {name: l3vpn, file_path: queries/service/l3vpn.gql}
   - {name: pe, file_path: queries/config/pe.gql}
   - {name: clab_topology, file_path: queries/topology/clab.gql}
+  - {name: l3vpn_overlap, file_path: queries/validation/l3vpn_overlap.gql}
+  - {name: l3vpn_site_subnet, file_path: queries/validation/l3vpn_site_subnet.gql}
+  - {name: pe_interface_alloc, file_path: queries/validation/pe_interface_alloc.gql}
+  - {name: backbone_session_count, file_path: queries/validation/backbone_session_count.gql}
 python_transforms:
   - {name: pe_arista_eos, class_name: PeAristaEos, file_path: transforms/pe_arista_eos.py}
   - {name: pe_cisco_iosxr, class_name: PeCiscoIosXr, file_path: transforms/pe_cisco_iosxr.py}
@@ -60,4 +64,8 @@ generator_definitions:
     class_name: L3VpnGenerator
     parameters:
       name: name__value
-check_definitions: []
+check_definitions:
+  - {name: l3vpn_overlap, class_name: L3VpnOverlapCheck, file_path: checks/l3vpn_overlap.py, targets: l3vpns}
+  - {name: l3vpn_site_subnet, class_name: L3VpnSiteSubnetCheck, file_path: checks/l3vpn_site_subnet.py, targets: l3vpns}
+  - {name: pe_interface_alloc, class_name: PeInterfaceAllocCheck, file_path: checks/pe_interface_alloc.py, targets: pes}
+  - {name: backbone_session_count, class_name: BackboneSessionCountCheck, file_path: checks/backbone_session_count.py, targets: pes}
