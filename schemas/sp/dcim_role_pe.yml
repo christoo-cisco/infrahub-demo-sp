@@ -1,0 +1,37 @@
+---
+# yaml-language-server: $schema=https://schema.infrahub.app/infrahub/schema/latest.json
+version: "1.0"
+
+extensions:
+  nodes:
+    - kind: DcimDevice
+      attributes:
+        - name: role
+          kind: Dropdown
+          optional: true
+          order_weight: 1400
+          choices:
+            - name: pe
+              label: Provider Edge
+              description: PE router terminating customer VPNs.
+              color: "#bf7fbf"
+            - name: p
+              label: Provider Core
+              description: P router (transit only, no customer VRFs).
+              color: "#7f7fff"
+            - name: rr
+              label: Route Reflector
+              description: BGP route reflector.
+              color: "#7fbfff"
+            - name: core
+              label: Core Router
+              description: Central part of the network.
+              color: "#7f7fff"
+            - name: edge
+              label: Edge Router
+              description: Network boundary with external networks.
+              color: "#bf7fbf"
+            - name: cpe
+              label: Customer Premise Equipment
+              description: Devices at the customer's premises.
+              color: "#bf7f7f"
