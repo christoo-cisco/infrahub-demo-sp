@@ -1,0 +1,145 @@
+{%- import '_macros.j2' as m -%}
+{%- set device = data.DcimDevice.edges[0].node -%}
+{%- set isis = data.MplsIsisProcess.edges[0].node -%}
+{%- set ldp = data.MplsLdpProcess.edges[0].node -%}
+{%- set bgp = data.MplsBgpProcess.edges[0].node -%}
+{%- set sites = data.ServiceL3VpnSite.edges -%}
+!
+! Cisco IOS-XR configuration for {{ device.name.value }}
+!
+hostname {{ device.name.value }}
+!
+route-policy PASS-ALL
+  pass
+end-policy
+!
+{# 1. Loopback interface #}
+{% for iface in device.interfaces.edges if iface.node.name.value == 'Loopback0' -%}
+interface Loopback0
+ description Router-ID / iBGP source
+{%- for ip in iface.node.ip_addresses.edges %}
+ ipv4 address {{ m.ip_only(ip.node.address.value) }} 255.255.255.255
+{%- endfor %}
+{% endfor %}
+!
+{# 2. Backbone interfaces #}
+{% for iface in device.interfaces.edges if iface.node.role.value == 'core' -%}
+interface {{ iface.node.name.value }}
+ description {{ iface.node.description.value }}
+ mtu {{ iface.node.mtu.value }}
+{%- for ip in iface.node.ip_addresses.edges %}
+ ipv4 address {{ m.ip_only(ip.node.address.value) }} 255.255.255.254
+{%- endfor %}
+ no shutdown
+{% endfor %}
+!
+{# 3. Per-VRF customer interfaces #}
+{% for site_edge in sites -%}
+{%- set site = site_edge.node -%}
+interface {{ site.pe_interface.node.name.value }}
+ description L3VPN {{ site.l3vpn.node.name.value }} - {{ site.name.value }}
+ vrf {{ site.l3vpn.node.vrf.node.name.value }}
+{%- if site.pe_address.node.address.value %}
+ ipv4 address {{ m.ip_only(site.pe_address.node.address.value) }} 255.255.255.252
+{%- endif %}
+ no shutdown
+!
+{% endfor %}
+!
+{# 4. VRF definitions #}
+{% set seen_vpns = [] %}
+{% for site_edge in sites -%}
+{%- set vpn = site_edge.node.l3vpn.node -%}
+{%- if vpn.name.value not in seen_vpns -%}
+{%- set _ = seen_vpns.append(vpn.name.value) -%}
+vrf {{ vpn.vrf.node.name.value }}
+ address-family ipv4 unicast
+  import route-target
+   {{ vpn.vrf.node.import_rt.node.name.value }}
+  !
+  export route-target
+   {{ vpn.vrf.node.export_rt.node.name.value }}
+  !
+ !
+!
+{% endif -%}
+{% endfor %}
+!
+{# 5. ISIS process #}
+router isis 1
+ net {{ isis.net_id.value }}
+ is-type level-2-only
+ address-family ipv4 unicast
+  metric-style wide
+ !
+ address-family ipv6 unicast
+  metric-style wide
+ !
+{% for iface in device.interfaces.edges if iface.node.role.value == 'core' -%}
+ interface {{ iface.node.name.value }}
+  point-to-point
+  address-family ipv4 unicast
+  !
+ !
+{% endfor %}
+!
+{# 6. MPLS LDP #}
+mpls ldp
+ router-id {{ ldp.router_id.value }}
+{% for iface in device.interfaces.edges if iface.node.role.value == 'core' -%}
+ interface {{ iface.node.name.value }}
+ !
+{% endfor %}
+!
+{# 7. MP-BGP iBGP mesh #}
+router bgp {{ device.asn.node.asn.value }}
+ bgp router-id {{ bgp.router_id.value }}
+{% for session in bgp.sessions.edges if session.node.session_type.value == 'INTERNAL' -%}
+ neighbor {{ m.ip_only(session.node.remote_ip.node.address.value) }}
+  remote-as {{ session.node.remote_as.node.asn.value }}
+  update-source Loopback0
+  address-family vpnv4 unicast
+   route-policy PASS-ALL in
+   route-policy PASS-ALL out
+  !
+  address-family vpnv6 unicast
+   route-policy PASS-ALL in
+   route-policy PASS-ALL out
+  !
+ !
+{% endfor %}
+!
+{# 8. Per-VRF PE-CE routing #}
+{% set seen_vpns = [] %}
+{% for site_edge in sites -%}
+{%- set site = site_edge.node -%}
+{%- set vpn = site.l3vpn.node -%}
+{%- if vpn.name.value not in seen_vpns -%}
+{%- set _ = seen_vpns.append(vpn.name.value) %}
+router bgp {{ device.asn.node.asn.value }}
+ vrf {{ vpn.vrf.node.name.value }}
+  bgp router-id {{ bgp.router_id.value }}
+  address-family ipv4 unicast
+   redistribute connected
+  !
+{%- for s in sites if s.node.l3vpn.node.name.value == vpn.name.value %}
+{%- if s.node.routing_protocol.value == 'ebgp' %}
+  neighbor {{ m.ip_only(s.node.ce_address.node.address.value) }}
+   remote-as {{ s.node.bgp_peer_asn.value }}
+   address-family ipv4 unicast
+    route-policy PASS-ALL in
+    route-policy PASS-ALL out
+   !
+  !
+{%- elif s.node.routing_protocol.value == 'static' %}
+{%- for sr in s.node.static_routes.value or [] %}
+  ! static: {{ sr.prefix }} via {{ sr.next_hop }}
+{%- endfor %}
+{%- endif %}
+{%- endfor %}
+ !
+!
+{% endif -%}
+{% endfor %}
+!
+end
