@@ -6,7 +6,7 @@ from pools and look up objects by deterministic keys.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from infrahub_sdk.client import InfrahubClient
 
@@ -31,9 +31,7 @@ async def allocate_prefix_from_pool(
     Returns:
         The Infrahub node for the newly-allocated IpamPrefix.
     """
-    pool: Any = await client.get(
-        kind="CoreIPPrefixPool", name__value=pool_name, branch=branch
-    )
+    pool: Any = await client.get(kind="CoreIPPrefixPool", name__value=pool_name, branch=branch)
     return await client.allocate_next_ip_prefix(
         pool,
         identifier=identifier,
@@ -78,4 +76,5 @@ async def next_free_physical_interface(
     )
     if not candidates:
         raise RuntimeError(f"No free physical interface on {device_name}")
+    candidates.sort(key=lambda c: cast(Any, c.name).value)
     return candidates[0]
