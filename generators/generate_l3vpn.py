@@ -142,7 +142,7 @@ class L3VpnGenerator(InfrahubGenerator):
         await cust_subnet.save()
 
         if site["routing_protocol"]["value"] == "ebgp":
-            await self._ensure_ebgp_session(site, site_obj, vrf)
+            await self._ensure_ebgp_session(site, site_obj, vrf, vpn["name"]["value"])
 
         site_obj.status.value = "active"  # type: ignore[union-attr]
         await site_obj.save()
@@ -152,9 +152,10 @@ class L3VpnGenerator(InfrahubGenerator):
         site: dict[str, Any],
         site_obj: Any,
         vrf: Any,
+        vpn_name: str,
     ) -> None:
         """Create PE-CE eBGP session if it doesn't already exist."""
-        desc = f"L3VPN PE-CE for {site['name']['value']}"
+        desc = f"L3VPN PE-CE {vpn_name} {site['name']['value']}"
         existing = await self.client.filters(
             kind="RoutingBGPSession",
             description__value=desc,
@@ -197,6 +198,7 @@ class L3VpnGenerator(InfrahubGenerator):
             remote_as=remote_as,
             local_ip=site_obj.pe_address,
             remote_ip=site_obj.ce_address,
+            vrf=vrf,
             status="active",
         )
         await session.save()
