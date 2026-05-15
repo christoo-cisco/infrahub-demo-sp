@@ -41,8 +41,7 @@ def bootstrap(c: Context) -> None:
     for path in sorted(Path("objects").glob("*.yml")):
         c.run(f"uv run infrahubctl object load {shlex.quote(str(path))}", pty=True)
     c.run(
-        "uv run infrahubctl protocols --branch main "
-        "--output generators/schema_protocols.py",
+        "uv run infrahubctl protocols --branch main --output generators/schema_protocols.py",
         pty=True,
     )
 

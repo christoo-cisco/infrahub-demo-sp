@@ -1,0 +1,202 @@
+"""L3VPN generator.
+
+Materialises VRF, route targets, PE-CE interfaces, IPs, and the
+optional eBGP session for each site of a ``ServiceL3Vpn``. Idempotent.
+"""
+
+from __future__ import annotations
+
+import ipaddress
+import logging
+from typing import Any
+
+from infrahub_sdk.generator import InfrahubGenerator
+
+from generators.common import (
+    allocate_prefix_from_pool,
+    find_or_create_route_target,
+    next_free_physical_interface,
+)
+
+LOG = logging.getLogger(__name__)
+
+
+class L3VpnGenerator(InfrahubGenerator):
+    """Generator that materialises everything downstream of a ServiceL3Vpn row."""
+
+    data: dict[str, Any]
+
+    async def generate(self, data: dict[str, Any] | None = None) -> None:
+        """Generate VRF + per-site resources for a single L3VPN."""
+        payload = data or self.data
+        vpn_edges = payload.get("ServiceL3Vpn", {}).get("edges", [])
+        if not vpn_edges:
+            LOG.warning("No ServiceL3Vpn matched; nothing to generate")
+            return
+        vpn = vpn_edges[0]["node"]
+
+        backbone_edges = payload.get("TopologyMplsBackbone", {}).get("edges", [])
+        if not backbone_edges:
+            raise RuntimeError("TopologyMplsBackbone mpls-backbone-1 not found")
+        backbone_asn = int(backbone_edges[0]["node"]["asn"]["node"]["asn"]["value"])
+
+        vrf = await self._ensure_vrf(vpn, backbone_asn)
+
+        for site_edge in vpn["sites"]["edges"]:
+            await self._materialise_site(site_edge["node"], vrf, vpn)
+
+    async def _ensure_vrf(self, vpn: dict[str, Any], backbone_asn: int) -> Any:
+        """Create the VRF (and its RT) if absent. Returns the VRF node."""
+        vpn_id = int(vpn["vpn_id"]["value"])
+        rd = f"{backbone_asn}:{vpn_id}"
+
+        if vpn["vrf"]:
+            return await self.client.get(
+                kind="IpamVRF",
+                id=vpn["vrf"]["node"]["id"],
+                branch=self.branch,
+            )
+
+        rt = await find_or_create_route_target(self.client, rd, self.branch)
+        vrf = await self.client.create(
+            kind="IpamVRF",
+            branch=self.branch,
+            name=vpn["name"]["value"],
+            vrf_rd=rd,
+            import_rt=rt,
+            export_rt=rt,
+            namespace={"hfid": ["default"]},
+        )
+        await vrf.save()
+
+        vpn_obj = await self.client.get(kind="ServiceL3Vpn", id=vpn["id"], branch=self.branch)
+        vpn_obj.vrf = vrf
+        vpn_obj.status.value = "active"  # type: ignore[union-attr]
+        await vpn_obj.save()
+        return vrf
+
+    async def _materialise_site(
+        self,
+        site: dict[str, Any],
+        vrf: Any,
+        vpn: dict[str, Any],
+    ) -> None:
+        """Allocate interface, /30, IPs, eBGP session if needed."""
+        site_obj = await self.client.get(
+            kind="ServiceL3VpnSite",
+            id=site["id"],
+            branch=self.branch,
+        )
+        pe_name = site["pe"]["node"]["name"]["value"]
+
+        if site.get("pe_interface"):
+            iface = await self.client.get(
+                kind="InterfacePhysical",
+                id=site["pe_interface"]["node"]["id"],
+                branch=self.branch,
+            )
+        else:
+            iface = await next_free_physical_interface(self.client, pe_name, self.branch)
+            iface.role.value = "cust"
+            iface.description.value = f"L3VPN {vpn['name']['value']}"
+            await iface.save()
+            site_obj.pe_interface = iface
+
+        if not site.get("pe_address") or not site.get("ce_address"):
+            p2p = await allocate_prefix_from_pool(
+                self.client,
+                "pe_ce_pool",
+                self.branch,
+                identifier=f"l3vpnsite-{site['id']}",
+                prefix_length=30,
+            )
+            p2p.vrf = vrf
+            await p2p.save()
+
+            net = ipaddress.IPv4Network(p2p.prefix.value)
+            pe_ip = await self.client.create(
+                kind="IpamIPAddress",
+                branch=self.branch,
+                address=f"{net.network_address + 1}/30",
+                interface=iface,
+                vrf=vrf,
+            )
+            await pe_ip.save()
+            ce_ip = await self.client.create(
+                kind="IpamIPAddress",
+                branch=self.branch,
+                address=f"{net.network_address + 2}/30",
+                vrf=vrf,
+            )
+            await ce_ip.save()
+
+            site_obj.pe_address = pe_ip
+            site_obj.ce_address = ce_ip
+
+        cust_subnet = await self.client.get(
+            kind="IpamPrefix",
+            id=site["customer_subnet"]["node"]["id"],
+            branch=self.branch,
+        )
+        cust_subnet.vrf = vrf
+        await cust_subnet.save()
+
+        if site["routing_protocol"]["value"] == "ebgp":
+            await self._ensure_ebgp_session(site, site_obj, vrf)
+
+        site_obj.status.value = "active"  # type: ignore[union-attr]
+        await site_obj.save()
+
+    async def _ensure_ebgp_session(
+        self,
+        site: dict[str, Any],
+        site_obj: Any,
+        vrf: Any,
+    ) -> None:
+        """Create PE-CE eBGP session if it doesn't already exist."""
+        desc = f"L3VPN PE-CE for {site['name']['value']}"
+        existing = await self.client.filters(
+            kind="RoutingBGPSession",
+            description__value=desc,
+            branch=self.branch,
+        )
+        if existing:
+            return
+
+        backbone_as = await self.client.get(
+            kind="RoutingAutonomousSystem",
+            name__value="OpsMillNet-AS",
+            branch=self.branch,
+        )
+        remote_asn = int(site["bgp_peer_asn"]["value"])
+        remote_objs = await self.client.filters(
+            kind="RoutingAutonomousSystem",
+            asn__value=remote_asn,
+            branch=self.branch,
+        )
+        if remote_objs:
+            remote_as = remote_objs[0]
+        else:
+            remote_as = await self.client.create(
+                kind="RoutingAutonomousSystem",
+                branch=self.branch,
+                name=f"customer-as-{remote_asn}",
+                asn=remote_asn,
+                organization={"hfid": ["OpsMillNet"]},
+            )
+            await remote_as.save()
+
+        session = await self.client.create(
+            kind="RoutingBGPSession",
+            branch=self.branch,
+            description=desc,
+            session_type="EXTERNAL",
+            role="peering",
+            device={"id": site["pe"]["node"]["id"]},
+            local_as=backbone_as,
+            remote_as=remote_as,
+            local_ip=site_obj.pe_address,
+            remote_ip=site_obj.ce_address,
+            status="active",
+        )
+        await session.save()
