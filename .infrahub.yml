@@ -13,11 +13,13 @@ menus:
 queries:
   - {name: l3vpn, file_path: queries/service/l3vpn.gql}
   - {name: pe, file_path: queries/config/pe.gql}
+  - {name: clab_topology, file_path: queries/topology/clab.gql}
 python_transforms:
   - {name: pe_arista_eos, class_name: PeAristaEos, file_path: transforms/pe_arista_eos.py}
   - {name: pe_cisco_iosxr, class_name: PeCiscoIosXr, file_path: transforms/pe_cisco_iosxr.py}
   - {name: pe_juniper_junos, class_name: PeJuniperJunos, file_path: transforms/pe_juniper_junos.py}
   - {name: pe_nokia_sros, class_name: PeNokiaSrOs, file_path: transforms/pe_nokia_sros.py}
+  - {name: clab_topology, class_name: ClabTopology, file_path: transforms/clab_topology.py}
 jinja2_transforms: []
 artifact_definitions:
   - name: pe-arista-eos-config
@@ -44,6 +46,12 @@ artifact_definitions:
     targets: pe_nokia_sros
     transformation: pe_nokia_sros
     parameters: {device: name__value}
+  - name: clab-mpls-topology
+    artifact_name: clab-mpls-topology
+    content_type: text/plain
+    targets: topologies_mpls
+    transformation: clab_topology
+    parameters: {name: name__value}
 generator_definitions:
   - name: generate_l3vpn
     file_path: generators/generate_l3vpn.py
