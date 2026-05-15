@@ -1,0 +1,69 @@
+{% set backbone = data.TopologyMplsBackbone.edges[0].node %}
+{% set labbed_kinds = ['ceos', 'srl'] %}
+{% set labbed_pes = [] %}
+{% for pe_edge in backbone.pes.edges %}
+{% if pe_edge.node.platform.node.containerlab_os.value in labbed_kinds %}
+{% set _ = labbed_pes.append(pe_edge.node) %}
+{% endif %}
+{% endfor %}
+# Containerlab topology for the {{ backbone.name.value }} backbone.
+# Only PEs whose platform has containerlab_os set are included.
+# Nokia SR OS is substituted to SR Linux (`srl`) because the lab uses
+# the publicly available SR Linux image; the per-PE config artifact
+# still renders SR OS canon for the engineer audience.
+---
+name: {{ backbone.name.value }}
+
+topology:
+  defaults:
+    env:
+      LAB_NAME: {{ backbone.name.value }}
+
+  kinds:
+    ceos:
+      image: ceos:4.32.0F
+    srl:
+      image: ghcr.io/nokia/srlinux:23.10
+    linux:
+      image: nicolaka/netshoot:latest
+
+  nodes:
+{% for pe in labbed_pes %}
+    {{ pe.name.value }}:
+      kind: {{ pe.platform.node.containerlab_os.value }}
+{% endfor %}
+{% for site_edge in data.ServiceL3VpnSite.edges %}
+{% set site = site_edge.node %}
+{% set pe_platform = site.pe.node.platform.node.name.value %}
+{% if pe_platform in ['arista_eos', 'nokia_sros'] %}
+    ce-{{ site.l3vpn.node.name.value }}-{{ site.pe.node.name.value }}:
+      kind: linux
+      exec:
+        - ip addr add {{ site.ce_address.node.address.value }} dev eth1
+        - ip route add default via {{ site.pe_address.node.address.value.split('/')[0] }}
+{% endif %}
+{% endfor %}
+
+  links:
+{% set arista = [none] %}
+{% set nokia = [none] %}
+{% for pe in labbed_pes %}
+{% if pe.platform.node.name.value == 'arista_eos' %}
+{% set _ = arista.__setitem__(0, pe) %}
+{% endif %}
+{% if pe.platform.node.name.value == 'nokia_sros' %}
+{% set _ = nokia.__setitem__(0, pe) %}
+{% endif %}
+{% endfor %}
+{% if arista[0] and nokia[0] %}
+    - endpoints: ["{{ arista[0].name.value }}:eth3", "{{ nokia[0].name.value }}:eth1"]
+{% endif %}
+{% for site_edge in data.ServiceL3VpnSite.edges %}
+{% set site = site_edge.node %}
+{% set pe_platform = site.pe.node.platform.node.name.value %}
+{% if pe_platform in ['arista_eos', 'nokia_sros'] %}
+    - endpoints:
+        - "{{ site.pe.node.name.value }}:{{ site.pe_interface.node.name.value }}"
+        - "ce-{{ site.l3vpn.node.name.value }}-{{ site.pe.node.name.value }}:eth1"
+{% endif %}
+{% endfor %}
