@@ -1,0 +1,104 @@
+# Architecture
+
+This page summarises the data flow and the role of each directory.
+
+## Data flow
+
+```
+Schema definition  →  Bootstrap data  →  Generators  →  Transforms  →  Artifacts
+                                            ↓
+                                          Checks
+```
+
+## Directory map
+
+| Path | Purpose |
+|---|---|
+| `schemas/base/` | Core node definitions copied from schema-library |
+| `schemas/extensions/` | VRF, routing, BGP, topology extensions from schema-library |
+| `schemas/sp/` | SP-demo-specific schemas (MPLS, L3VPN service, PE role) |
+| `objects/` | Pre-loaded bootstrap data (PEs, backbone, pools, tenants) |
+| `generators/` | `L3VpnGenerator` materialises VRF + interfaces + IPs |
+| `transforms/` | One Python+Jinja transform per vendor + the clab transform |
+| `templates/` | Jinja2 templates (one per vendor + clab + macros) |
+| `checks/` | Four checks gating the proposed-change pipeline |
+| `service_catalog/` | Streamlit sidecar (Dashboard + Create L3VPN) |
+| `queries/` | GraphQL queries used by generators, transforms, checks |
+| `menus/` | Sidebar menu configuration |
+| `lab/` | Runtime-only; not committed |
+
+## Backbone
+
+The MPLS backbone is **static demo data**: 4 PEs (one per vendor) with a
+pre-built full iBGP mesh, ISIS L2, and LDP. This keeps the demo focused on
+the L3VPN-as-a-service story. To add or move PEs, edit `objects/60_backbone.yml`
+by hand and rerun `invoke bootstrap`.
+
+## L3VPN service flow
+
+When an operator creates an L3VPN through the Streamlit catalog:
+
+1. The catalog allocates a `vpn_id` from the `vpn_id_pool` number pool.
+2. It opens a feature branch and creates `ServiceL3Vpn` + one or more
+   `ServiceL3VpnSite` objects.
+3. It opens a `CoreProposedChange` targeting `main`.
+4. Infrahub runs the `L3VpnGenerator`, which materialises the VRF,
+   route targets, PE-CE interfaces, IP addresses, and an eBGP session
+   if the routing protocol is set to `ebgp`.
+5. The four checks run in the pipeline — any failure blocks the merge.
+6. Per-vendor config artifacts are rendered by the transform layer.
+7. The operator reviews the diff in the Infrahub UI and merges.
+
+See [services/l3vpn.md](services/l3vpn.md) for the full service reference.
+
+## Transform layer
+
+Each vendor has a dedicated Python transform module (in `transforms/`) backed
+by a Jinja2 template (in `templates/`). The transform fetches the full PE
+state via GraphQL and renders a single, complete device configuration
+fragment. The mapping is:
+
+| Vendor | Transform | Template |
+|---|---|---|
+| Arista EOS | `transforms/pe_arista_eos.py` | `templates/pe_arista_eos.j2` |
+| Cisco IOS-XR | `transforms/pe_cisco_iosxr.py` | `templates/pe_cisco_iosxr.j2` |
+| Juniper Junos | `transforms/pe_juniper_junos.py` | `templates/pe_juniper_junos.j2` |
+| Nokia SR OS | `transforms/pe_nokia_sros.py` | `templates/pe_nokia_sros.j2` |
+| Containerlab | `transforms/clab_topology.py` | `templates/clab_topology.j2` |
+
+## Checks
+
+Four checks gate the proposed-change pipeline:
+
+| Check | What it enforces |
+|---|---|
+| `l3vpn_overlap` | No duplicate VPN IDs across active L3VPNs |
+| `l3vpn_site_subnet` | Customer subnet is reachable / not already allocated in the same VRF |
+| `pe_interface_alloc` | The nominated PE interface is free (status = `free`) |
+| `backbone_session_count` | Every PE has at least 3 iBGP sessions (full mesh invariant) |
+
+## Schema layering
+
+Schemas are loaded in three passes so each layer can reference the previous:
+
+```
+invoke bootstrap
+  └── infrahubctl schema load schemas/base/
+  └── infrahubctl schema load schemas/extensions/
+  └── infrahubctl schema load schemas/sp/
+```
+
+The SP layer adds `ServiceL3Vpn`, `ServiceL3VpnSite`, `TopologyMplsBackbone`,
+`MplsIsisProcess`, `MplsLdpProcess`, and `MplsBgpProcess`. See
+[schema-reference.md](schema-reference.md) for field-level details.
+
+## Out-of-scope / future extensions
+
+- SR-MPLS / Segment Routing
+- Dedicated P + Route Reflectors
+- Multi-RT VPNs (hub-spoke, extranet)
+- OSPF as a PE-CE protocol
+- Mandatory CE device modelling
+- Add-Site / Decommission flows in the catalog
+- Lab deployment of Cisco IOS-XR / Juniper Junos PEs
+- Multi-region / inter-AS L3VPN
