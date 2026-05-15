@@ -1,0 +1,15 @@
+{# Format a /31 or /30 IP for vendor display (strip mask if requested). #}
+{% macro ip_only(address) -%}
+{{ address.split('/')[0] }}
+{%- endmacro %}
+
+{% macro mask_only(address) -%}
+{{ address.split('/')[1] }}
+{%- endmacro %}
+
+{# Filter interfaces by role. #}
+{% macro core_interfaces(interfaces) -%}
+{% for iface in interfaces if iface.node.role.value == 'core' -%}
+{{ iface.node.name.value }}
+{% endfor %}
+{%- endmacro %}
