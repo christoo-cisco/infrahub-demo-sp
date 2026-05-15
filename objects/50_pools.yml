@@ -1,0 +1,66 @@
+---
+# First, the IPAM containers the prefix/address pools draw from.
+apiVersion: infrahub.app/v1
+kind: Object
+spec:
+  kind: IpamPrefix
+  data:
+    - prefix: 10.0.0.0/24
+      description: PE Loopback0 supernet
+      status: active
+      role: loopback
+    - prefix: 10.1.0.0/16
+      description: Backbone p2p supernet
+      status: active
+      role: technical
+    - prefix: 10.100.0.0/16
+      description: PE-CE supernet
+      status: active
+      role: public
+
+---
+apiVersion: infrahub.app/v1
+kind: Object
+spec:
+  kind: CoreNumberPool
+  data:
+    - name: vpn_id_pool
+      node: ServiceL3Vpn
+      node_attribute: vpn_id
+      start_range: 100
+      end_range: 9999
+
+---
+apiVersion: infrahub.app/v1
+kind: Object
+spec:
+  kind: CoreIPAddressPool
+  data:
+    - name: pe_loopback_pool
+      default_address_type: IpamIPAddress
+      default_prefix_length: 32
+      ip_namespace: default
+      resources:
+        - 10.0.0.0/24
+
+---
+apiVersion: infrahub.app/v1
+kind: Object
+spec:
+  kind: CoreIPPrefixPool
+  data:
+    - name: backbone_p2p_pool
+      default_prefix_type: IpamPrefix
+      default_prefix_length: 31
+      default_member_type: address
+      ip_namespace: default
+      resources:
+        - 10.1.0.0/16
+
+    - name: pe_ce_pool
+      default_prefix_type: IpamPrefix
+      default_prefix_length: 30
+      default_member_type: address
+      ip_namespace: default
+      resources:
+        - 10.100.0.0/16
