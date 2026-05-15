@@ -17,6 +17,7 @@ python_transforms:
   - {name: pe_arista_eos, class_name: PeAristaEos, file_path: transforms/pe_arista_eos.py}
   - {name: pe_cisco_iosxr, class_name: PeCiscoIosXr, file_path: transforms/pe_cisco_iosxr.py}
   - {name: pe_juniper_junos, class_name: PeJuniperJunos, file_path: transforms/pe_juniper_junos.py}
+  - {name: pe_nokia_sros, class_name: PeNokiaSrOs, file_path: transforms/pe_nokia_sros.py}
 jinja2_transforms: []
 artifact_definitions:
   - name: pe-arista-eos-config
@@ -36,6 +37,12 @@ artifact_definitions:
     content_type: text/plain
     targets: pe_juniper_junos
     transformation: pe_juniper_junos
+    parameters: {device: name__value}
+  - name: pe-nokia-sros-config
+    artifact_name: pe-nokia-sros
+    content_type: text/plain
+    targets: pe_nokia_sros
+    transformation: pe_nokia_sros
     parameters: {device: name__value}
 generator_definitions:
   - name: generate_l3vpn
