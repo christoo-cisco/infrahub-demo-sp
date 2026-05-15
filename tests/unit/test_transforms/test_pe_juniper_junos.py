@@ -6,7 +6,7 @@ import pytest
 
 from transforms.pe_juniper_junos import PeJuniperJunos
 
-from .fixtures import pe_fixture
+from .fixtures import pe_fixture, pe_fixture_with_site
 
 FIXTURE = pe_fixture(
     name="pe-ams-juniper",
@@ -39,3 +39,13 @@ async def test_renders_ibgp_and_vpn_families() -> None:
     assert "family inet-vpn" in rendered
     assert "type internal" in rendered
     assert "10.0.0.1" in rendered
+
+
+@pytest.mark.asyncio
+async def test_renders_l3vpn_vrf_block_when_site_present() -> None:
+    """Template renders routing-instance with instance-type vrf and route-distinguisher."""
+    rendered = await PeJuniperJunos.__new__(PeJuniperJunos).transform(
+        pe_fixture_with_site("pe-ams-juniper", "10.0.0.3/32", "49.0001.0100.0000.0003.00")
+    )
+    assert "instance-type vrf" in rendered
+    assert "route-distinguisher 65000:100" in rendered

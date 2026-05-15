@@ -6,6 +6,8 @@ import pytest
 
 from transforms.pe_arista_eos import PeAristaEos
 
+from .fixtures import pe_fixture_with_site
+
 FIXTURE = {
     "DcimDevice": {
         "edges": [
@@ -141,3 +143,13 @@ async def test_renders_ibgp_neighbor_and_address_families() -> None:
     assert "neighbor 10.0.0.2 peer group RR-MESH" in rendered
     assert "address-family vpn-ipv4" in rendered
     assert "address-family vpn-ipv6" in rendered
+
+
+@pytest.mark.asyncio
+async def test_renders_l3vpn_vrf_block_when_site_present() -> None:
+    """Template renders vrf instance and rd when a site is attached."""
+    rendered = await PeAristaEos.__new__(PeAristaEos).transform(
+        pe_fixture_with_site("pe-lon-arista", "10.0.0.1/32", "49.0001.0100.0000.0001.00")
+    )
+    assert "vrf instance acme-prod" in rendered
+    assert "rd 65000:100" in rendered

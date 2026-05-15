@@ -6,7 +6,7 @@ import pytest
 
 from transforms.pe_nokia_sros import PeNokiaSrOs
 
-from .fixtures import pe_fixture
+from .fixtures import pe_fixture, pe_fixture_with_site
 
 FIXTURE = pe_fixture(
     name="pe-nyc-nokia",
@@ -48,3 +48,13 @@ async def test_nokia_system_id_extracted_from_net() -> None:
         pe_fixture("pe-par-nokia", "10.0.0.4/32", "49.0001.0100.0000.0004.00")
     )
     assert "system-id 0100.0000.0004" in rendered
+
+
+@pytest.mark.asyncio
+async def test_renders_l3vpn_vrf_block_when_site_present() -> None:
+    """Template renders vprn service block with service-id when a site is attached."""
+    rendered = await PeNokiaSrOs.__new__(PeNokiaSrOs).transform(
+        pe_fixture_with_site("pe-nyc-nokia", "10.0.0.4/32", "49.0001.0100.0000.0004.00")
+    )
+    assert "vprn" in rendered
+    assert "service-id 100" in rendered

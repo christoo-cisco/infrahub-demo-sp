@@ -6,7 +6,7 @@ import pytest
 
 from transforms.pe_cisco_iosxr import PeCiscoIosXr
 
-from .fixtures import pe_fixture
+from .fixtures import pe_fixture, pe_fixture_with_site
 
 FIXTURE = pe_fixture(
     name="pe-fra-cisco",
@@ -40,3 +40,13 @@ async def test_renders_ibgp_and_vpnv4_families() -> None:
     assert "router bgp 65000" in rendered
     assert "address-family vpnv4 unicast" in rendered
     assert "route-policy PASS-ALL" in rendered
+
+
+@pytest.mark.asyncio
+async def test_renders_l3vpn_vrf_block_when_site_present() -> None:
+    """Template renders vrf definition and route-target import when a site is attached."""
+    rendered = await PeCiscoIosXr.__new__(PeCiscoIosXr).transform(
+        pe_fixture_with_site("pe-fra-cisco", "10.0.0.2/32", "49.0001.0100.0000.0002.00")
+    )
+    assert "vrf acme-prod" in rendered
+    assert "import route-target" in rendered
