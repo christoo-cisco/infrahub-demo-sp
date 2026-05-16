@@ -14,7 +14,7 @@ st.title("L3VPN Dashboard")
 @st.cache_data(ttl=10)
 def _branches() -> list[str]:
     client = client_for()
-    return [b.name for b in run_async(client.branch.all())]
+    return list(run_async(client.branch.all()).keys())
 
 
 branch = st.selectbox("Branch", options=_branches(), index=0)
