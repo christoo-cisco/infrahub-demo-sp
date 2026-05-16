@@ -13,16 +13,12 @@ class L3VpnSiteSubnetCheck(InfrahubCheck):
 
     query = "l3vpn_site_subnet"
 
-    async def validate(self, data: dict[str, Any]) -> list[str]:  # type: ignore[override]
-        """Return error messages for any intra-VPN subnet overlap.
+    async def validate(self, data: dict[str, Any]) -> None:  # type: ignore[override]
+        """Log errors for any intra-VPN subnet overlap.
 
         Args:
             data: Result of the ``l3vpn_site_subnet`` GraphQL query.
-
-        Returns:
-            List of human-readable failure messages.
         """
-        errors: list[str] = []
         for vpn_edge in data.get("ServiceL3Vpn", {}).get("edges", []):
             vpn = vpn_edge["node"]
             subnets: list[tuple[str, ipaddress.IPv4Network]] = []
@@ -34,10 +30,11 @@ class L3VpnSiteSubnetCheck(InfrahubCheck):
                 subnets.append((site["name"]["value"], ipaddress.IPv4Network(prefix_str)))
 
             for i, (name_a, net_a) in enumerate(subnets):
-                for name_b, net_b in subnets[i + 1:]:
+                for name_b, net_b in subnets[i + 1 :]:
                     if net_a.overlaps(net_b):
-                        errors.append(
-                            f"L3VPN {vpn['name']['value']}: "
-                            f"{name_a} subnet {net_a} overlaps {name_b} subnet {net_b}",
+                        self.log_error(
+                            message=(
+                                f"L3VPN {vpn['name']['value']}: "
+                                f"{name_a} subnet {net_a} overlaps {name_b} subnet {net_b}"
+                            ),
                         )
-        return errors

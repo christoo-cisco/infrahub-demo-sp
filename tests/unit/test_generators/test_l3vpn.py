@@ -34,7 +34,9 @@ async def test_generator_creates_vrf_with_correct_rd_on_first_run() -> None:
                 }
             ]
         },
-        "TopologyMplsBackbone": {"edges": [{"node": {"asn": {"node": {"asn": {"value": 65000}}}}}]},
+        "TopologyMplsBackbone": {
+            "edges": [{"node": {"asn": {"node": {"id": "as-65000", "asn": {"value": 65000}}}}}]
+        },
     }
 
     gen = L3VpnGenerator.__new__(L3VpnGenerator)

@@ -13,14 +13,11 @@ class PeInterfaceAllocCheck(InfrahubCheck):
 
     query = "pe_interface_alloc"
 
-    async def validate(self, data: dict[str, Any]) -> list[str]:  # type: ignore[override]
-        """Fail when any (pe, interface) tuple is claimed by 2+ sites.
+    async def validate(self, data: dict[str, Any]) -> None:  # type: ignore[override]
+        """Log errors when any (pe, interface) tuple is claimed by 2+ sites.
 
         Args:
             data: Result of the ``pe_interface_alloc`` GraphQL query.
-
-        Returns:
-            List of human-readable failure messages.
         """
         groups: dict[tuple[str, str], list[str]] = defaultdict(list)
         for edge in data.get("ServiceL3VpnSite", {}).get("edges", []):
@@ -30,8 +27,8 @@ class PeInterfaceAllocCheck(InfrahubCheck):
             key = (node["pe"]["node"]["name"]["value"], node["pe_interface"]["node"]["id"])
             groups[key].append(node["name"]["value"])
 
-        errors: list[str] = []
         for (pe, _), sites in groups.items():
             if len(sites) > 1:
-                errors.append(f"PE {pe} interface double-claimed by sites: {', '.join(sites)}")
-        return errors
+                self.log_error(
+                    message=f"PE {pe} interface double-claimed by sites: {', '.join(sites)}",
+                )

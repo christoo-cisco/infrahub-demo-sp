@@ -58,3 +58,12 @@ nodes:
       - OrganizationGeneric
     include_in_menu: true
     menu_placement: OrganizationGeneric
+
+  - name: Tenant
+    namespace: Organization
+    description: A customer or tenant organisation consuming network services.
+    icon: mdi:office-building
+    inherit_from:
+      - OrganizationGeneric
+    include_in_menu: true
+    menu_placement: OrganizationGeneric

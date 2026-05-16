@@ -13,25 +13,25 @@ class L3VpnOverlapCheck(InfrahubCheck):
 
     query = "l3vpn_overlap"
 
-    async def validate(self, data: dict[str, Any]) -> list[str]:  # type: ignore[override]
-        """Return list of error messages (empty = pass).
+    async def validate(self, data: dict[str, Any]) -> None:  # type: ignore[override]
+        """Log errors for any duplicate Route Distinguisher across L3VPNs.
 
         Args:
             data: Result of the ``l3vpn_overlap`` GraphQL query.
-
-        Returns:
-            List of human-readable failure messages.
         """
         rd_to_vpns: dict[str, list[str]] = defaultdict(list)
         for edge in data.get("ServiceL3Vpn", {}).get("edges", []):
             node = edge["node"]
             if not node.get("vrf"):
                 continue
-            rd = node["vrf"]["node"]["vrf_rd"]["value"]
+            vrf_rd = node["vrf"]["node"].get("vrf_rd")
+            if not vrf_rd or vrf_rd.get("value") is None:
+                continue
+            rd = vrf_rd["value"]
             rd_to_vpns[rd].append(node["name"]["value"])
 
-        errors: list[str] = []
         for rd, names in rd_to_vpns.items():
             if len(names) > 1:
-                errors.append(f"duplicate RD {rd}: used by {', '.join(names)}")
-        return errors
+                self.log_error(
+                    message=f"duplicate RD {rd}: used by {', '.join(names)}",
+                )

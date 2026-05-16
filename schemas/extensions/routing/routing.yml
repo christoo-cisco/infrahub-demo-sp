@@ -10,11 +10,9 @@ generics:
     icon: "carbon:router"
     include_in_menu: false
     attributes:
-      # TODO: Should be computed later
       - name: description
         kind: Text
         optional: false
-        unique: true
         description: "Description of the protocol"
         order_weight: 1100
       - name: status

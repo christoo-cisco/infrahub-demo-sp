@@ -8,13 +8,10 @@ generics:
     description: Generic model for topology.
     label: Topology
     icon: carbon:network-3
-    # default_filter: name__value
-    # display_label: name__value
+    human_friendly_id:
+      - name__value
+    display_label: name__value
     attributes:
-      # TODO: I believe at some point some Containerlab tricks will happen here
-      # e.g. boolean "is container lab topo" then if ticked we generate artifact
-      # Or actually it would be better to create a group for that?
-      # Then
       - name: description
         kind: Text
         order_weight: 1300
@@ -25,8 +22,3 @@ generics:
         optional: true
         cardinality: one
         kind: Attribute
-      # TODO: When implementing design ...
-      # - name: design
-      #   peer: TopologyDesign
-      #   kind: Attribute
-      #   cardinality: one

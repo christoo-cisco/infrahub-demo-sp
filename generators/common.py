@@ -50,7 +50,7 @@ async def find_or_create_route_target(
     if rt:
         return rt[0]
     obj = await client.create(kind="IpamRouteTarget", branch=branch, name=name)
-    await obj.save()
+    await obj.save(allow_upsert=True)
     return obj
 
 

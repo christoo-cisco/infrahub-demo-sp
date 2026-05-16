@@ -38,12 +38,14 @@ class L3VpnGenerator(InfrahubGenerator):
         backbone_edges = payload.get("TopologyMplsBackbone", {}).get("edges", [])
         if not backbone_edges:
             raise RuntimeError("TopologyMplsBackbone mpls-backbone-1 not found")
-        backbone_asn = int(backbone_edges[0]["node"]["asn"]["node"]["asn"]["value"])
+        backbone_node = backbone_edges[0]["node"]
+        backbone_asn = int(backbone_node["asn"]["node"]["asn"]["value"])
+        backbone_as_id: str = backbone_node["asn"]["node"]["id"]
 
         vrf = await self._ensure_vrf(vpn, backbone_asn)
 
         for site_edge in vpn["sites"]["edges"]:
-            await self._materialise_site(site_edge["node"], vrf, vpn)
+            await self._materialise_site(site_edge["node"], vrf, vpn, backbone_as_id)
 
     async def _ensure_vrf(self, vpn: dict[str, Any], backbone_asn: int) -> Any:
         """Create the VRF (and its RT) if absent. Returns the VRF node."""
@@ -67,12 +69,12 @@ class L3VpnGenerator(InfrahubGenerator):
             export_rt=rt,
             namespace={"hfid": ["default"]},
         )
-        await vrf.save()
+        await vrf.save(allow_upsert=True)
 
         vpn_obj = await self.client.get(kind="ServiceL3Vpn", id=vpn["id"], branch=self.branch)
         vpn_obj.vrf = vrf
         vpn_obj.status.value = "active"  # type: ignore[union-attr]
-        await vpn_obj.save()
+        await vpn_obj.save(allow_upsert=True)
         return vrf
 
     async def _materialise_site(
@@ -80,8 +82,16 @@ class L3VpnGenerator(InfrahubGenerator):
         site: dict[str, Any],
         vrf: Any,
         vpn: dict[str, Any],
+        backbone_as_id: str,
     ) -> None:
-        """Allocate interface, /30, IPs, eBGP session if needed."""
+        """Allocate interface, /30, IPs, eBGP session if needed.
+
+        Args:
+            site: Site node from the GraphQL query result.
+            vrf: The IpamVRF node for this L3VPN.
+            vpn: The ServiceL3Vpn node from the GraphQL query result.
+            backbone_as_id: Infrahub ID of the backbone RoutingAutonomousSystem node.
+        """
         site_obj = await self.client.get(
             kind="ServiceL3VpnSite",
             id=site["id"],
@@ -99,7 +109,7 @@ class L3VpnGenerator(InfrahubGenerator):
             iface = await next_free_physical_interface(self.client, pe_name, self.branch)
             iface.role.value = "cust"
             iface.description.value = f"L3VPN {vpn['name']['value']}"
-            await iface.save()
+            await iface.save(allow_upsert=True)
             site_obj.pe_interface = iface
 
         if not site.get("pe_address") or not site.get("ce_address"):
@@ -111,7 +121,7 @@ class L3VpnGenerator(InfrahubGenerator):
                 prefix_length=30,
             )
             p2p.vrf = vrf
-            await p2p.save()
+            await p2p.save(allow_upsert=True)
 
             net = ipaddress.IPv4Network(p2p.prefix.value)
             pe_ip = await self.client.create(
@@ -121,14 +131,14 @@ class L3VpnGenerator(InfrahubGenerator):
                 interface=iface,
                 vrf=vrf,
             )
-            await pe_ip.save()
+            await pe_ip.save(allow_upsert=True)
             ce_ip = await self.client.create(
                 kind="IpamIPAddress",
                 branch=self.branch,
                 address=f"{net.network_address + 2}/30",
                 vrf=vrf,
             )
-            await ce_ip.save()
+            await ce_ip.save(allow_upsert=True)
 
             site_obj.pe_address = pe_ip
             site_obj.ce_address = ce_ip
@@ -139,13 +149,15 @@ class L3VpnGenerator(InfrahubGenerator):
             branch=self.branch,
         )
         cust_subnet.vrf = vrf
-        await cust_subnet.save()
+        await cust_subnet.save(allow_upsert=True)
 
         if site["routing_protocol"]["value"] == "ebgp":
-            await self._ensure_ebgp_session(site, site_obj, vrf, vpn["name"]["value"])
+            await self._ensure_ebgp_session(
+                site, site_obj, vrf, vpn["name"]["value"], backbone_as_id
+            )
 
         site_obj.status.value = "active"  # type: ignore[union-attr]
-        await site_obj.save()
+        await site_obj.save(allow_upsert=True)
 
     async def _ensure_ebgp_session(
         self,
@@ -153,8 +165,18 @@ class L3VpnGenerator(InfrahubGenerator):
         site_obj: Any,
         vrf: Any,
         vpn_name: str,
+        backbone_as_id: str,
     ) -> None:
-        """Create PE-CE eBGP session if it doesn't already exist."""
+        """Create PE-CE eBGP session if it doesn't already exist.
+
+        Args:
+            site: Site node from the GraphQL query result.
+            site_obj: The live ServiceL3VpnSite Infrahub node.
+            vrf: The IpamVRF node for this L3VPN.
+            vpn_name: Human-readable VPN name (for the session description).
+            backbone_as_id: Infrahub ID of the backbone RoutingAutonomousSystem — derived
+                from the query result to avoid coupling to a hardcoded AS name.
+        """
         desc = f"L3VPN PE-CE {vpn_name} {site['name']['value']}"
         existing = await self.client.filters(
             kind="RoutingBGPSession",
@@ -166,7 +188,7 @@ class L3VpnGenerator(InfrahubGenerator):
 
         backbone_as = await self.client.get(
             kind="RoutingAutonomousSystem",
-            name__value="OpsMillNet-AS",
+            id=backbone_as_id,
             branch=self.branch,
         )
         remote_asn = int(site["bgp_peer_asn"]["value"])
@@ -185,7 +207,7 @@ class L3VpnGenerator(InfrahubGenerator):
                 asn=remote_asn,
                 organization={"hfid": ["OpsMillNet"]},
             )
-            await remote_as.save()
+            await remote_as.save(allow_upsert=True)
 
         session = await self.client.create(
             kind="RoutingBGPSession",
@@ -201,4 +223,4 @@ class L3VpnGenerator(InfrahubGenerator):
             vrf=vrf,
             status="active",
         )
-        await session.save()
+        await session.save(allow_upsert=True)
