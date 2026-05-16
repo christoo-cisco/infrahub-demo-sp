@@ -82,6 +82,11 @@ jobs:
         uses: rvben/rumdl@v0
         with:
           report-type: annotations
+          # Only fail CI on errors (broken relative links, missing required
+          # frontmatter, etc.). Pre-existing warnings (line length, bare
+          # URLs, command prompts) are surfaced as annotations but don't
+          # block the build.
+          args: --fail-on error
 
   unit-test:
     if: |
