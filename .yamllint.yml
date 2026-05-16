@@ -11,7 +11,7 @@ ignore: |
 
 rules:
   line-length:
-    max: 120
+    max: 200
     level: warning
   document-start: disable
   truthy:
