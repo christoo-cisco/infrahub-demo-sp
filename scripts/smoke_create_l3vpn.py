@@ -13,8 +13,7 @@ async def main() -> None:
         address="http://localhost:8000",
         api_token="06438eb2-8019-4776-878c-0941b1f1d1ec",
     )
-    pool = await client.get(kind="CoreNumberPool", name__value="vpn_id_pool")
-    vpn_id = int(await pool.allocate_resource(identifier="smoketest"))
+    vpn_id_pool = await client.get(kind="CoreNumberPool", name__value="vpn_id_pool")
 
     cust = await client.create(
         kind="IpamPrefix",
@@ -27,10 +26,11 @@ async def main() -> None:
     vpn = await client.create(
         kind="ServiceL3Vpn",
         name="smoketest-vpn",
-        vpn_id=vpn_id,
+        vpn_id=vpn_id_pool,
         tenant={"hfid": ["acme"]},
     )
     await vpn.save()
+    vpn_id = int(vpn.vpn_id.value)
 
     site = await client.create(
         kind="ServiceL3VpnSite",

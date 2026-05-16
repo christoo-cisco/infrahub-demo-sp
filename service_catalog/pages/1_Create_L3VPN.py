@@ -80,25 +80,27 @@ if submitted:
             st.error(e)
         st.stop()
 
-    with st.spinner("Allocating vpn_id, opening branch, creating objects..."):
-        pool = run_async(client_main.get(kind="CoreNumberPool", name__value="vpn_id_pool"))
-        vpn_id = int(run_async(pool.allocate_resource(identifier=f"catalog-{uuid.uuid4()}")))
-
-        branch_name = f"service/l3vpn-{vpn_id}"
+    with st.spinner("Opening branch and creating objects..."):
+        branch_name = f"service/l3vpn-{uuid.uuid4().hex[:8]}"
         branch = run_async(client_main.branch.create(branch_name, sync_with_git=False))
         client = client_for(branch=branch_name)
+
+        vpn_id_pool = run_async(
+            client.get(kind="CoreNumberPool", name__value="vpn_id_pool")
+        )
 
         vpn = run_async(
             client.create(
                 kind="ServiceL3Vpn",
                 name=name,
                 description=description,
-                vpn_id=vpn_id,
+                vpn_id=vpn_id_pool,
                 address_family=address_family,
                 tenant={"hfid": [tenant]},
             )
         )
         run_async(vpn.save())
+        vpn_id = int(vpn.vpn_id.value)
 
         for s in sites:
             cust = run_async(
