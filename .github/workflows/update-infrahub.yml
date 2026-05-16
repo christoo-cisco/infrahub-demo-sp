@@ -67,7 +67,7 @@ jobs:
       - name: Commit and push changes with github-actions-x/commit
         uses: github-actions-x/commit@v2.9
         with:
-          github-token: ${{ secrets.GH_UPDATE_PACKAGE_OTTO }}
+          github-token: ${{ secrets.PAT_TOKEN }}
           push-branch: ${{ env.BRANCH_NAME }}
           commit-message: "chore: update test-containers to version ${{ env.INFRAHUB_VERSION }} and bump version in pyproject"
           files: |
@@ -79,7 +79,7 @@ jobs:
 
       - name: Create a pull request
         run: |
-          echo ${{ secrets.GH_UPDATE_PACKAGE_OTTO }} | gh auth login --with-token
+          echo ${{ secrets.PAT_TOKEN }} | gh auth login --with-token
           gh pr create \
             --title "update test-containers to version ${{ env.INFRAHUB_VERSION }} against ${{ matrix.branch-name}}" \
             --body "This PR updates test-containers to version ${{ env.INFRAHUB_VERSION }}." \
