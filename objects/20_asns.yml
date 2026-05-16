@@ -4,7 +4,7 @@ kind: Object
 spec:
   kind: RoutingAutonomousSystem
   data:
-    - name: OpsMillNet-AS
+    - name: Sterling-Financial-AS
       asn: 65000
-      description: Backbone AS for the OpsMillNet demo.
-      organization: OpsMillNet
+      description: Private ASN for the Sterling Financial EMEA MPLS backbone.
+      organization: Sterling Financial

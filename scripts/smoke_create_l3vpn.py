@@ -27,7 +27,7 @@ async def main() -> None:
         kind="ServiceL3Vpn",
         name="smoketest-vpn",
         vpn_id=vpn_id_pool,
-        tenant={"hfid": ["acme"]},
+        tenant={"hfid": ["markets-trading"]},
     )
     await vpn.save()
     vpn_id = int(vpn.vpn_id.value)

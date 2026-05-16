@@ -205,7 +205,7 @@ class L3VpnGenerator(InfrahubGenerator):
                 branch=self.branch,
                 name=f"customer-as-{remote_asn}",
                 asn=remote_asn,
-                organization={"hfid": ["OpsMillNet"]},
+                organization={"hfid": ["Sterling Financial"]},
             )
             await remote_as.save(allow_upsert=True)
 

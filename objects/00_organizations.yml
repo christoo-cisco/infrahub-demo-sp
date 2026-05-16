@@ -19,8 +19,8 @@ kind: Object
 spec:
   kind: OrganizationProvider
   data:
-    - name: OpsMillNet
-      description: Demo service provider operating the MPLS backbone.
+    - name: Sterling Financial
+      description: Sterling Financial Services - global financial firm operating this internal MPLS backbone.
 
 ---
 apiVersion: infrahub.app/v1
@@ -28,9 +28,19 @@ kind: Object
 spec:
   kind: OrganizationTenant
   data:
-    - name: acme
-      description: ACME Corp (customer).
-    - name: contoso
-      description: Contoso Ltd (customer).
-    - name: globex
-      description: Globex Industries (customer).
+    - name: investment-banking
+      description: Investment Banking division - M&A advisory, capital markets, syndicated lending.
+    - name: markets-trading
+      description: Markets & Trading - equities, fixed income, FX, commodities flow trading.
+    - name: asset-management
+      description: Asset Management - institutional and retail fund operations.
+    - name: wealth-management
+      description: Wealth Management - private banking and high-net-worth client services.
+    - name: corporate-banking
+      description: Corporate Banking - cash management, lending, trade finance for corporate clients.
+    - name: risk-compliance
+      description: Risk & Compliance - enterprise risk, regulatory reporting, surveillance systems.
+    - name: treasury-ops
+      description: Corporate Treasury - firm-wide liquidity, funding, intercompany settlement.
+    - name: it-shared-services
+      description: Shared IT Services - DNS, identity, monitoring, internal collaboration platforms.
