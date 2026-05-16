@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import os
+import time
+import urllib.request
 import uuid
 from typing import Any
 
@@ -128,6 +130,31 @@ if submitted:
                 )
             )
             run_async(site_obj.save())
+
+        # Wait for the L3VPN generator (auto-fired by group membership) to
+        # materialize the VRF / interfaces / IPs before triggering artifact
+        # rendering, otherwise downstream artifacts render against stale data
+        # and the proposed change shows no diff against main.
+        def _is_active() -> bool:
+            v = run_async(client.get(kind="ServiceL3Vpn", name__value=name))
+            return v.status.value == "active"
+
+        deadline = time.monotonic() + 120
+        while not _is_active() and time.monotonic() < deadline:
+            time.sleep(2)
+
+        # Trigger artifact regeneration on the branch so the proposed change
+        # shows real per-PE config diffs. Infrahub doesn't automatically
+        # re-render artifacts whose template's query data changed; we have
+        # to nudge each definition.
+        for definition in run_async(client.all(kind="CoreArtifactDefinition")):
+            url = f"{client.address}/api/artifact/generate/{definition.id}?branch={branch_name}"
+            request = urllib.request.Request(
+                url,
+                method="POST",
+                headers={"X-INFRAHUB-KEY": os.environ["INFRAHUB_API_TOKEN"]},
+            )
+            urllib.request.urlopen(request).read()
 
         pc = run_async(
             client_main.create(
