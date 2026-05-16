@@ -1,0 +1,103 @@
+query PE($device: String!) {
+  DcimDevice(name__value: $device) {
+    edges {
+      node {
+        id
+        name { value }
+        platform { node { name { value } } }
+        interfaces {
+          edges {
+            node {
+              __typename
+              id
+              name { value }
+              description { value }
+              status { value }
+              role { value }
+              mtu { value }
+              ... on InterfacePhysical {
+                ip_addresses {
+                  edges { node { address { value } vrf { node { name { value } } } } }
+                }
+              }
+              ... on InterfaceVirtual {
+                ip_addresses {
+                  edges { node { address { value } vrf { node { name { value } } } } }
+                }
+              }
+            }
+          }
+        }
+        asn { node { asn { value } } }
+      }
+    }
+  }
+  MplsIsisProcess(device__name__value: $device) {
+    edges {
+      node {
+        area_id { value }
+        level { value }
+        net_id { value }
+        interfaces { edges { node { name { value } } } }
+      }
+    }
+  }
+  MplsLdpProcess(device__name__value: $device) {
+    edges {
+      node {
+        router_id { value }
+        transport_address { node { address { value } } }
+        interfaces { edges { node { name { value } } } }
+      }
+    }
+  }
+  MplsBgpProcess(device__name__value: $device) {
+    edges {
+      node {
+        router_id { value }
+        address_families { value }
+        sessions {
+          edges {
+            node {
+              description { value }
+              session_type { value }
+              local_ip { node { address { value } } }
+              remote_ip { node { address { value } } }
+              local_as { node { asn { value } } }
+              remote_as { node { asn { value } } }
+            }
+          }
+        }
+      }
+    }
+  }
+  ServiceL3VpnSite(pe__name__value: $device) {
+    edges {
+      node {
+        name { value }
+        routing_protocol { value }
+        bgp_peer_asn { value }
+        static_routes { value }
+        pe_interface { node { name { value } } }
+        customer_subnet { node { prefix { value } vrf { node { name { value } } } } }
+        pe_address { node { address { value } } }
+        ce_address { node { address { value } } }
+        l3vpn {
+          node {
+            name { value }
+            vpn_id { value }
+            address_family { value }
+            vrf {
+              node {
+                name { value }
+                vrf_rd { value }
+                import_rt { node { name { value } } }
+                export_rt { node { name { value } } }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

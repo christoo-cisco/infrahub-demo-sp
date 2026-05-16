@@ -1,0 +1,106 @@
+{% import '_macros.j2' as m %}
+{% set device = data.DcimDevice.edges[0].node %}
+{% set isis = data.MplsIsisProcess.edges[0].node %}
+{% set ldp = data.MplsLdpProcess.edges[0].node %}
+{% set bgp = data.MplsBgpProcess.edges[0].node %}
+{% set sites = data.ServiceL3VpnSite.edges %}
+!
+! Arista EOS configuration for {{ device.name.value }}
+!
+hostname {{ device.name.value }}
+!
+{% for iface in device.interfaces.edges if iface.node.name.value == 'Loopback0' %}
+interface Loopback0
+   description Router-ID / iBGP source
+{% for ip in iface.node.ip_addresses.edges %}
+   ip address {{ ip.node.address.value }}
+{% endfor %}
+{% endfor %}
+!
+{% for iface in device.interfaces.edges if iface.node.role.value == 'core' %}
+interface {{ iface.node.name.value }}
+   description {{ iface.node.description.value }}
+   mtu {{ iface.node.mtu.value }}
+   no switchport
+   mpls ip
+   isis enable 1
+   isis network point-to-point
+{% for ip in iface.node.ip_addresses.edges %}
+   ip address {{ ip.node.address.value }}
+{% endfor %}
+!
+{% endfor %}
+{# Per-VRF customer interfaces #}
+{% for site_edge in sites %}
+{% set site = site_edge.node %}
+interface {{ site.pe_interface.node.name.value }}
+   description L3VPN {{ site.l3vpn.node.name.value }} - {{ site.name.value }}
+   no switchport
+   vrf {{ site.l3vpn.node.vrf.node.name.value }}
+   ip address {{ site.pe_address.node.address.value }}
+!
+{% endfor %}
+!
+router isis 1
+   net {{ isis.net_id.value }}
+   is-type {{ isis.level.value }}
+   address-family ipv4 unicast
+   address-family ipv6 unicast
+!
+mpls ldp
+   router-id {{ ldp.router_id.value }}
+   no shutdown
+!
+{# Per-VRF instances #}
+{% set seen_vpns = [] %}
+{% for site_edge in sites %}
+{% set vpn = site_edge.node.l3vpn.node %}
+{% if vpn.name.value not in seen_vpns %}
+{% set _ = seen_vpns.append(vpn.name.value) %}
+vrf instance {{ vpn.vrf.node.name.value }}
+   rd {{ vpn.vrf.node.vrf_rd.value }}
+   route-target import {{ vpn.vrf.node.import_rt.node.name.value }}
+   route-target export {{ vpn.vrf.node.export_rt.node.name.value }}
+!
+{% endif %}
+{% endfor %}
+!
+router bgp {{ device.asn.node.asn.value }}
+   router-id {{ bgp.router_id.value }}
+   neighbor RR-MESH peer group
+{% for session in bgp.sessions.edges if session.node.session_type.value == 'INTERNAL' %}
+   neighbor {{ m.ip_only(session.node.remote_ip.node.address.value) }} peer group RR-MESH
+   neighbor {{ m.ip_only(session.node.remote_ip.node.address.value) }} remote-as {{ session.node.remote_as.node.asn.value }}
+   neighbor {{ m.ip_only(session.node.remote_ip.node.address.value) }} update-source Loopback0
+{% endfor %}
+   !
+{% for af in bgp.address_families.value %}
+   address-family {{ af | replace('vpnv4', 'vpn-ipv4') | replace('vpnv6', 'vpn-ipv6') }}
+{% for session in bgp.sessions.edges if session.node.session_type.value == 'INTERNAL' %}
+      neighbor {{ m.ip_only(session.node.remote_ip.node.address.value) }} activate
+{% endfor %}
+{% endfor %}
+!
+{# Per-VRF PE-CE configuration #}
+{% set seen_vpns = [] %}
+{% for site_edge in sites %}
+{% set site = site_edge.node %}
+{% set vpn = site.l3vpn.node %}
+{% if vpn.name.value not in seen_vpns %}
+{% set _ = seen_vpns.append(vpn.name.value) %}
+router bgp {{ device.asn.node.asn.value }}
+   vrf {{ vpn.vrf.node.name.value }}
+{% for s in sites if s.node.l3vpn.node.name.value == vpn.name.value %}
+{% if s.node.routing_protocol.value == 'ebgp' %}
+      neighbor {{ m.ip_only(s.node.ce_address.node.address.value) }} remote-as {{ s.node.bgp_peer_asn.value }}
+{% elif s.node.routing_protocol.value == 'static' %}
+{% for sr in s.node.static_routes.value or [] %}
+      ! static route: {{ sr.prefix }} via {{ sr.next_hop }}
+{% endfor %}
+{% endif %}
+{% endfor %}
+!
+{% endif %}
+{% endfor %}
+!
+end

@@ -1,0 +1,24 @@
+---
+# yaml-language-server: $schema=https://schema.infrahub.app/infrahub/schema/latest.json
+version: "1.0"
+
+generics:
+  - name: Generic
+    namespace: Topology
+    description: Generic model for topology.
+    label: Topology
+    icon: carbon:network-3
+    human_friendly_id:
+      - name__value
+    display_label: name__value
+    attributes:
+      - name: description
+        kind: Text
+        order_weight: 1300
+        optional: true
+    relationships:
+      - name: location
+        peer: LocationGeneric
+        optional: true
+        cardinality: one
+        kind: Attribute

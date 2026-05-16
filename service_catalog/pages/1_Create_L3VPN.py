@@ -1,0 +1,148 @@
+"""Create L3VPN wizard form."""
+
+from __future__ import annotations
+
+import os
+import uuid
+from typing import Any
+
+import streamlit as st
+from utils import client_for, run_async, wait_for_pipeline
+from utils.validators import validate_create_l3vpn_form
+
+st.title("Create L3VPN")
+
+client_main = client_for()
+tenants = run_async(client_main.all(kind="OrganizationTenant"))
+tenant_names = sorted(t.name.value for t in tenants)
+
+pes = run_async(client_main.filters(kind="DcimDevice", role__value="pe"))
+pe_options = {f"{p.name.value} ({p.platform.peer.name.value})": p.name.value for p in pes}
+
+with st.form("create_l3vpn"):
+    st.subheader("Service basics")
+    name = st.text_input("Name", placeholder="acme-prod")
+    description = st.text_input("Description (optional)")
+    tenant = st.selectbox("Tenant", options=tenant_names)
+    address_family = st.radio("Address family", options=["ipv4", "ipv4_ipv6"], horizontal=True)
+
+    st.subheader("Sites")
+    site_count = st.number_input("Number of sites", min_value=2, max_value=4, value=2, step=1)
+    sites: list[dict[str, Any]] = []
+    for i in range(int(site_count)):
+        st.markdown(f"**Site {i + 1}**")
+        site_name = st.text_input("Site name", key=f"sname_{i}")
+        pe_label = st.selectbox("PE", options=list(pe_options.keys()), key=f"pe_{i}")
+        subnet = st.text_input("Customer subnet (CIDR)", key=f"sub_{i}", placeholder="10.1.0.0/24")
+        proto = st.radio(
+            "PE-CE routing",
+            options=["ebgp", "static", "connected"],
+            key=f"proto_{i}",
+            horizontal=True,
+        )
+        asn = (
+            st.number_input(
+                "BGP peer ASN", min_value=0, max_value=4294967295, key=f"asn_{i}", value=0
+            )
+            if proto == "ebgp"
+            else None
+        )
+        static_routes = None
+        if proto == "static":
+            static_text = st.text_area(
+                "Static routes (one `<prefix> via <next-hop>` per line)", key=f"sr_{i}"
+            )
+            static_routes = []
+            for line in static_text.splitlines():
+                parts = [p.strip() for p in line.split("via")]
+                if len(parts) == 2:
+                    static_routes.append({"prefix": parts[0], "next_hop": parts[1]})
+
+        sites.append(
+            {
+                "name": site_name,
+                "pe": pe_options[pe_label],
+                "customer_subnet": subnet,
+                "routing_protocol": proto,
+                "bgp_peer_asn": int(asn) if asn else None,
+                "static_routes": static_routes,
+            }
+        )
+
+    submitted = st.form_submit_button("Create L3VPN", type="primary")
+
+if submitted:
+    errors = validate_create_l3vpn_form(name=name, tenant=tenant, sites=sites)
+    if errors:
+        for e in errors:
+            st.error(e)
+        st.stop()
+
+    with st.spinner("Allocating vpn_id, opening branch, creating objects..."):
+        pool = run_async(client_main.get(kind="CoreNumberPool", name__value="vpn_id_pool"))
+        vpn_id = int(run_async(pool.allocate_resource(identifier=f"catalog-{uuid.uuid4()}")))
+
+        branch_name = f"service/l3vpn-{vpn_id}"
+        branch = run_async(client_main.branch.create(branch_name, sync_with_git=False))
+        client = client_for(branch=branch_name)
+
+        vpn = run_async(
+            client.create(
+                kind="ServiceL3Vpn",
+                name=name,
+                description=description,
+                vpn_id=vpn_id,
+                address_family=address_family,
+                tenant={"hfid": [tenant]},
+            )
+        )
+        run_async(vpn.save())
+
+        for s in sites:
+            cust = run_async(
+                client.create(
+                    kind="IpamPrefix",
+                    prefix=s["customer_subnet"],
+                    status="active",
+                    role="public",
+                )
+            )
+            run_async(cust.save())
+            site_obj = run_async(
+                client.create(
+                    kind="ServiceL3VpnSite",
+                    name=s["name"],
+                    l3vpn=vpn,
+                    pe={"hfid": [s["pe"]]},
+                    customer_subnet=cust,
+                    routing_protocol=s["routing_protocol"],
+                    bgp_peer_asn=s["bgp_peer_asn"],
+                    static_routes=s["static_routes"],
+                )
+            )
+            run_async(site_obj.save())
+
+        pc = run_async(
+            client_main.create(
+                kind="CoreProposedChange",
+                source_branch=branch_name,
+                destination_branch="main",
+                name=f"Create L3VPN {name}",
+            )
+        )
+        run_async(pc.save())
+
+    st.success(f"Branch `{branch_name}` opened, vpn_id={vpn_id}.")
+    st.markdown(
+        f"[View Proposed Change in Infrahub]"
+        f"({os.environ.get('INFRAHUB_UI_URL', 'http://localhost:8000')}/proposed-changes/{pc.id})",
+    )
+
+    with st.spinner("Waiting for generator + checks..."):
+        state = wait_for_pipeline(client_main, pc.id)
+    if state in ("completed", "merged"):
+        st.success(f"Pipeline state: {state}.")
+    elif state == "timed_out":
+        st.warning("Timed out waiting for pipeline; check the Infrahub UI.")
+    else:
+        st.error(f"Pipeline state: {state}. Inspect logs in Infrahub.")

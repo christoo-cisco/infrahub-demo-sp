@@ -1,0 +1,17 @@
+query L3VpnSiteSubnet {
+  ServiceL3Vpn {
+    edges {
+      node {
+        name { value }
+        sites {
+          edges {
+            node {
+              name { value }
+              customer_subnet { node { prefix { value } } }
+            }
+          }
+        }
+      }
+    }
+  }
+}

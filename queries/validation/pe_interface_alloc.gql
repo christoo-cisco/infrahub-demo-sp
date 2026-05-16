@@ -1,0 +1,11 @@
+query PeInterfaceAlloc {
+  ServiceL3VpnSite {
+    edges {
+      node {
+        name { value }
+        pe { node { name { value } } }
+        pe_interface { node { id name { value } } }
+      }
+    }
+  }
+}
