@@ -7,7 +7,7 @@ import uuid
 from typing import Any
 
 import streamlit as st
-from utils import client_for, run_async, wait_for_pipeline
+from utils import client_for, run_async
 from utils.validators import validate_create_l3vpn_form
 
 st.title("Create L3VPN")
@@ -136,17 +136,11 @@ if submitted:
         )
         run_async(pc.save())
 
+    ui_url = os.environ.get("INFRAHUB_UI_URL", "http://localhost:8000")
     st.success(f"Branch `{branch_name}` opened, vpn_id={vpn_id}.")
     st.markdown(
-        f"[View Proposed Change in Infrahub]"
-        f"({os.environ.get('INFRAHUB_UI_URL', 'http://localhost:8000')}/proposed-changes/{pc.id})",
+        f"**Next step:** review the diff and the validation pipeline in Infrahub, "
+        f"then merge the proposed change.\n\n"
+        f"- [Open Proposed Change]({ui_url}/proposed-changes/{pc.id})\n"
+        f"- [Browse branch in Infrahub]({ui_url}/?branch={branch_name})",
     )
-
-    with st.spinner("Waiting for generator + checks..."):
-        state = wait_for_pipeline(client_main, pc.id)
-    if state in ("completed", "merged"):
-        st.success(f"Pipeline state: {state}.")
-    elif state == "timed_out":
-        st.warning("Timed out waiting for pipeline; check the Infrahub UI.")
-    else:
-        st.error(f"Pipeline state: {state}. Inspect logs in Infrahub.")
