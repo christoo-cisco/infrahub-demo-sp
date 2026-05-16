@@ -3,6 +3,7 @@ apiVersion: infrahub.app/v1
 kind: Menu
 spec:
   data:
+    # ===================== SERVICE CATALOG =====================
     - namespace: Service
       name: ServiceCatalog
       label: Service Catalog
@@ -17,38 +18,175 @@ spec:
             kind: ServiceL3Vpn
             order_weight: 1100
 
-    - namespace: Topology
-      name: Topology
-      label: Topology
-      icon: carbon:network-3-reference
+    # ===================== BACKBONE =====================
+    - namespace: Mpls
+      name: Backbone
+      label: Backbone
+      icon: carbon:network-3
       order_weight: 2000
       children:
         data:
           - namespace: Topology
             name: MplsBackbone
             label: MPLS Backbones
+            icon: carbon:network-3
             kind: TopologyMplsBackbone
             order_weight: 2100
 
-    - namespace: Mpls
-      name: Mpls
-      label: MPLS
-      icon: mdi:router-network
-      order_weight: 3000
-      children:
-        data:
           - namespace: Mpls
             name: IsisProcess
             label: ISIS Processes
             icon: mdi:chevron-triple-right
             kind: MplsIsisProcess
+            order_weight: 2200
+
           - namespace: Mpls
             name: LdpProcess
             label: LDP Processes
             icon: mdi:label-outline
             kind: MplsLdpProcess
+            order_weight: 2300
+
           - namespace: Mpls
             name: BgpProcess
             label: MP-BGP Processes
             icon: mdi:routes
             kind: MplsBgpProcess
+            order_weight: 2400
+
+          - namespace: Routing
+            name: BGPSession
+            label: BGP Sessions
+            icon: mdi:router
+            kind: RoutingBGPSession
+            order_weight: 2500
+
+          - namespace: Routing
+            name: AutonomousSystem
+            label: Autonomous Systems
+            icon: mdi:bank-circle-outline
+            kind: RoutingAutonomousSystem
+            order_weight: 2600
+
+    # ===================== INVENTORY =====================
+    - namespace: Dcim
+      name: Inventory
+      label: Inventory
+      icon: mdi:server
+      order_weight: 3000
+      children:
+        data:
+          - namespace: Dcim
+            name: Device
+            label: Devices
+            icon: clarity:network-switch-solid
+            kind: DcimDevice
+            order_weight: 3100
+
+          - namespace: Dcim
+            name: Interface
+            label: Interfaces
+            icon: mdi:ethernet
+            kind: DcimInterface
+            order_weight: 3200
+
+          - namespace: Dcim
+            name: DeviceType
+            label: Device Types
+            icon: mdi:package-variant
+            kind: DcimDeviceType
+            order_weight: 3300
+
+          - namespace: Dcim
+            name: Platform
+            label: Platforms
+            icon: mdi:chip
+            kind: DcimPlatform
+            order_weight: 3400
+
+          - namespace: Organization
+            name: Manufacturer
+            label: Manufacturers
+            icon: mdi:factory
+            kind: OrganizationManufacturer
+            order_weight: 3500
+
+    # ===================== IPAM =====================
+    - namespace: Ipam
+      name: IPAM
+      label: IPAM
+      icon: mdi:ip
+      order_weight: 4000
+      children:
+        data:
+          - namespace: Ipam
+            name: Prefix
+            label: Prefixes
+            icon: mdi:ip-network
+            kind: IpamPrefix
+            order_weight: 4100
+
+          - namespace: Ipam
+            name: IPAddress
+            label: IP Addresses
+            icon: mdi:ip
+            kind: IpamIPAddress
+            order_weight: 4200
+
+          - namespace: Ipam
+            name: VRF
+            label: VRFs
+            icon: mdi:router
+            kind: IpamVRF
+            order_weight: 4300
+
+          - namespace: Ipam
+            name: RouteTarget
+            label: Route Targets
+            icon: mdi:target
+            kind: IpamRouteTarget
+            order_weight: 4400
+
+    # ===================== LOCATIONS =====================
+    - namespace: Location
+      name: Locations
+      label: Locations
+      icon: mdi:map-marker
+      order_weight: 5000
+      children:
+        data:
+          - namespace: Location
+            name: Region
+            label: Regions
+            icon: carbon:cics-region-target
+            kind: LocationRegion
+            order_weight: 5100
+
+          - namespace: Location
+            name: Site
+            label: Sites
+            icon: mdi:office-building-marker
+            kind: LocationSite
+            order_weight: 5200
+
+    # ===================== ORGANIZATIONS =====================
+    - namespace: Organization
+      name: Organizations
+      label: Organizations
+      icon: mdi:domain
+      order_weight: 6000
+      children:
+        data:
+          - namespace: Organization
+            name: Tenant
+            label: Tenants
+            icon: mdi:account-group
+            kind: OrganizationTenant
+            order_weight: 6100
+
+          - namespace: Organization
+            name: Provider
+            label: Providers
+            icon: mdi:cloud-outline
+            kind: OrganizationProvider
+            order_weight: 6200

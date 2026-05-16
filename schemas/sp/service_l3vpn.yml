@@ -8,6 +8,7 @@ nodes:
     description: A Layer-3 VPN service offered to a tenant.
     label: L3 VPN
     icon: mdi:vpn
+    include_in_menu: false
     human_friendly_id:
       - name__value
     display_label: name__value
@@ -76,6 +77,7 @@ nodes:
     description: A single PE attachment of an L3VPN to a customer subnet.
     label: L3VPN Site
     icon: mdi:office-building-marker
+    include_in_menu: false
     menu_placement: ServiceL3Vpn
     human_friendly_id:
       - name__value

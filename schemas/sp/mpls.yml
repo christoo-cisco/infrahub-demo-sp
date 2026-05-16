@@ -10,6 +10,7 @@ nodes:
     icon: mdi:router-network
     inherit_from:
       - RoutingProtocol
+    include_in_menu: false
     human_friendly_id:
       - device__name__value
     display_label: "ISIS on {{ device__name__value }}"
@@ -47,6 +48,7 @@ nodes:
     icon: mdi:label-outline
     inherit_from:
       - RoutingProtocol
+    include_in_menu: false
     human_friendly_id:
       - device__name__value
     display_label: "LDP on {{ device__name__value }}"
@@ -73,6 +75,7 @@ nodes:
     icon: mdi:network
     inherit_from:
       - RoutingProtocol
+    include_in_menu: false
     human_friendly_id:
       - device__name__value
     display_label: "MP-BGP on {{ device__name__value }}"

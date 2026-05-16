@@ -10,6 +10,7 @@ nodes:
     icon: carbon:network-3
     inherit_from:
       - TopologyGeneric
+    include_in_menu: false
     human_friendly_id:
       - name__value
     display_label: name__value

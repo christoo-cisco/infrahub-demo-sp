@@ -8,6 +8,7 @@ generics:
     description: Generic model for topology.
     label: Topology
     icon: carbon:network-3
+    include_in_menu: false
     attributes:
       - name: description
         kind: Text
