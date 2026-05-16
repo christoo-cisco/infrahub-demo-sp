@@ -13,7 +13,7 @@ from utils.validators import validate_create_l3vpn_form
 st.title("Create L3VPN")
 
 client_main = client_for()
-tenants = run_async(client_main.all(kind="OrganizationGeneric"))
+tenants = run_async(client_main.all(kind="OrganizationTenant"))
 tenant_names = sorted(t.name.value for t in tenants)
 
 pes = run_async(client_main.filters(kind="DcimDevice", role__value="pe"))
