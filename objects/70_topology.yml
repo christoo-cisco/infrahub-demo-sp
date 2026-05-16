@@ -8,10 +8,12 @@ spec:
       description: OpsMillNet demo MPLS backbone (EMEA).
       isis_area: "49.0001"
       isis_level: level-2
-      location: EMEA
-      asn: OpsMillNet-AS
+      location: emea
+      asn: ["65000", "OpsMillNet-AS"]
       pes:
         - pe-lon-arista
         - pe-fra-cisco
         - pe-ams-juniper
         - pe-par-nokia
+      member_of_groups:
+        - topologies_mpls

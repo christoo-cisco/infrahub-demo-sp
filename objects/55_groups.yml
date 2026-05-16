@@ -6,28 +6,17 @@ spec:
   data:
     - name: pe_arista_eos
       description: PEs running Arista EOS.
-      members: [pe-lon-arista]
     - name: pe_cisco_iosxr
       description: PEs running Cisco IOS-XR.
-      members: [pe-fra-cisco]
     - name: pe_juniper_junos
       description: PEs running Juniper Junos.
-      members: [pe-ams-juniper]
     - name: pe_nokia_sros
       description: PEs running Nokia SR OS.
-      members: [pe-par-nokia]
     - name: pes
       description: All PE devices in the backbone.
-      members:
-        - pe-lon-arista
-        - pe-fra-cisco
-        - pe-ams-juniper
-        - pe-par-nokia
     - name: topologies_mpls
       description: All MplsBackbone topology rows.
-      members: [mpls-backbone-1]
     # l3vpns group is populated dynamically when ServiceL3Vpn objects are created;
     # bootstrap creates it empty so transforms / generators can target it.
     - name: l3vpns
       description: All ServiceL3Vpn rows (auto-populated as services are created).
-      members: []

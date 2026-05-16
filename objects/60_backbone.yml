@@ -8,34 +8,46 @@ spec:
     - name: pe-lon-arista
       status: active
       role: pe
-      location: London
+      location: lon
       platform: arista_eos
       device_type: 7280R3
-      asn: OpsMillNet-AS
+      asn: ["65000", "OpsMillNet-AS"]
+      member_of_groups:
+        - pe_arista_eos
+        - pes
     - name: pe-fra-cisco
       status: active
       role: pe
-      location: Frankfurt
+      location: fra
       platform: cisco_iosxr
       device_type: NCS-540
-      asn: OpsMillNet-AS
+      asn: ["65000", "OpsMillNet-AS"]
+      member_of_groups:
+        - pe_cisco_iosxr
+        - pes
     - name: pe-ams-juniper
       status: active
       role: pe
-      location: Amsterdam
+      location: ams
       platform: juniper_junos
       device_type: MX204
-      asn: OpsMillNet-AS
+      asn: ["65000", "OpsMillNet-AS"]
+      member_of_groups:
+        - pe_juniper_junos
+        - pes
     - name: pe-par-nokia
       status: active
       role: pe
-      location: Paris
+      location: par
       platform: nokia_sros
       device_type: 7250-IXR-R6
-      asn: OpsMillNet-AS
+      asn: ["65000", "OpsMillNet-AS"]
+      member_of_groups:
+        - pe_nokia_sros
+        - pes
 
 ---
-# Loopback0 interfaces (one per PE)
+# Loopback0 interfaces (one per PE) with embedded loopback IP addresses
 apiVersion: infrahub.app/v1
 kind: Object
 spec:
@@ -47,47 +59,47 @@ spec:
       status: active
       role: management
       device: pe-lon-arista
+      ip_addresses:
+        kind: IpamIPAddress
+        data:
+          - address: 10.0.0.1/32
+            description: pe-lon-arista loopback
     - name: Loopback0
       description: Router-ID / iBGP source
       mtu: 1500
       status: active
       role: management
       device: pe-fra-cisco
+      ip_addresses:
+        kind: IpamIPAddress
+        data:
+          - address: 10.0.0.2/32
+            description: pe-fra-cisco loopback
     - name: Loopback0
       description: Router-ID / iBGP source
       mtu: 1500
       status: active
       role: management
       device: pe-ams-juniper
+      ip_addresses:
+        kind: IpamIPAddress
+        data:
+          - address: 10.0.0.3/32
+            description: pe-ams-juniper loopback
     - name: Loopback0
       description: Router-ID / iBGP source
       mtu: 1500
       status: active
       role: management
       device: pe-par-nokia
+      ip_addresses:
+        kind: IpamIPAddress
+        data:
+          - address: 10.0.0.4/32
+            description: pe-par-nokia loopback
 
 ---
-# Loopback IP addresses (router IDs)
-apiVersion: infrahub.app/v1
-kind: Object
-spec:
-  kind: IpamIPAddress
-  data:
-    - address: 10.0.0.1/32
-      description: pe-lon-arista loopback
-      interface: {hfid: [pe-lon-arista, Loopback0]}
-    - address: 10.0.0.2/32
-      description: pe-fra-cisco loopback
-      interface: {hfid: [pe-fra-cisco, Loopback0]}
-    - address: 10.0.0.3/32
-      description: pe-ams-juniper loopback
-      interface: {hfid: [pe-ams-juniper, Loopback0]}
-    - address: 10.0.0.4/32
-      description: pe-par-nokia loopback
-      interface: {hfid: [pe-par-nokia, Loopback0]}
-
----
-# Backbone physical interfaces (one per p2p link end = 12 total for 6 links)
+# Backbone physical interfaces with embedded IP addresses (12 total for 6 p2p links)
 # Naming: Ethernet1, Ethernet2, Ethernet3 on each PE (vendor-neutral for demo simplicity)
 apiVersion: infrahub.app/v1
 kind: Object
@@ -95,21 +107,129 @@ spec:
   kind: InterfacePhysical
   data:
     # pe-lon-arista
-    - {name: Ethernet1, description: To pe-fra-cisco, mtu: 9000, status: active, role: core, device: pe-lon-arista}
-    - {name: Ethernet2, description: To pe-ams-juniper, mtu: 9000, status: active, role: core, device: pe-lon-arista}
-    - {name: Ethernet3, description: To pe-par-nokia, mtu: 9000, status: active, role: core, device: pe-lon-arista}
+    - name: Ethernet1
+      description: To pe-fra-cisco
+      mtu: 9000
+      status: active
+      role: core
+      device: pe-lon-arista
+      ip_addresses:
+        kind: IpamIPAddress
+        data:
+          - address: 10.1.0.0/31
+    - name: Ethernet2
+      description: To pe-ams-juniper
+      mtu: 9000
+      status: active
+      role: core
+      device: pe-lon-arista
+      ip_addresses:
+        kind: IpamIPAddress
+        data:
+          - address: 10.1.0.2/31
+    - name: Ethernet3
+      description: To pe-par-nokia
+      mtu: 9000
+      status: active
+      role: core
+      device: pe-lon-arista
+      ip_addresses:
+        kind: IpamIPAddress
+        data:
+          - address: 10.1.0.4/31
     # pe-fra-cisco
-    - {name: Ethernet1, description: To pe-lon-arista, mtu: 9000, status: active, role: core, device: pe-fra-cisco}
-    - {name: Ethernet2, description: To pe-ams-juniper, mtu: 9000, status: active, role: core, device: pe-fra-cisco}
-    - {name: Ethernet3, description: To pe-par-nokia, mtu: 9000, status: active, role: core, device: pe-fra-cisco}
+    - name: Ethernet1
+      description: To pe-lon-arista
+      mtu: 9000
+      status: active
+      role: core
+      device: pe-fra-cisco
+      ip_addresses:
+        kind: IpamIPAddress
+        data:
+          - address: 10.1.0.1/31
+    - name: Ethernet2
+      description: To pe-ams-juniper
+      mtu: 9000
+      status: active
+      role: core
+      device: pe-fra-cisco
+      ip_addresses:
+        kind: IpamIPAddress
+        data:
+          - address: 10.1.0.6/31
+    - name: Ethernet3
+      description: To pe-par-nokia
+      mtu: 9000
+      status: active
+      role: core
+      device: pe-fra-cisco
+      ip_addresses:
+        kind: IpamIPAddress
+        data:
+          - address: 10.1.0.8/31
     # pe-ams-juniper
-    - {name: Ethernet1, description: To pe-lon-arista, mtu: 9000, status: active, role: core, device: pe-ams-juniper}
-    - {name: Ethernet2, description: To pe-fra-cisco, mtu: 9000, status: active, role: core, device: pe-ams-juniper}
-    - {name: Ethernet3, description: To pe-par-nokia, mtu: 9000, status: active, role: core, device: pe-ams-juniper}
+    - name: Ethernet1
+      description: To pe-lon-arista
+      mtu: 9000
+      status: active
+      role: core
+      device: pe-ams-juniper
+      ip_addresses:
+        kind: IpamIPAddress
+        data:
+          - address: 10.1.0.3/31
+    - name: Ethernet2
+      description: To pe-fra-cisco
+      mtu: 9000
+      status: active
+      role: core
+      device: pe-ams-juniper
+      ip_addresses:
+        kind: IpamIPAddress
+        data:
+          - address: 10.1.0.7/31
+    - name: Ethernet3
+      description: To pe-par-nokia
+      mtu: 9000
+      status: active
+      role: core
+      device: pe-ams-juniper
+      ip_addresses:
+        kind: IpamIPAddress
+        data:
+          - address: 10.1.0.10/31
     # pe-par-nokia
-    - {name: Ethernet1, description: To pe-lon-arista, mtu: 9000, status: active, role: core, device: pe-par-nokia}
-    - {name: Ethernet2, description: To pe-fra-cisco, mtu: 9000, status: active, role: core, device: pe-par-nokia}
-    - {name: Ethernet3, description: To pe-ams-juniper, mtu: 9000, status: active, role: core, device: pe-par-nokia}
+    - name: Ethernet1
+      description: To pe-lon-arista
+      mtu: 9000
+      status: active
+      role: core
+      device: pe-par-nokia
+      ip_addresses:
+        kind: IpamIPAddress
+        data:
+          - address: 10.1.0.5/31
+    - name: Ethernet2
+      description: To pe-fra-cisco
+      mtu: 9000
+      status: active
+      role: core
+      device: pe-par-nokia
+      ip_addresses:
+        kind: IpamIPAddress
+        data:
+          - address: 10.1.0.9/31
+    - name: Ethernet3
+      description: To pe-ams-juniper
+      mtu: 9000
+      status: active
+      role: core
+      device: pe-par-nokia
+      ip_addresses:
+        kind: IpamIPAddress
+        data:
+          - address: 10.1.0.11/31
 
 ---
 # Backbone p2p prefixes (6 × /31 from 10.1.0.0/16)
@@ -124,32 +244,6 @@ spec:
     - {prefix: 10.1.0.6/31, description: fra-cisco <-> ams-juniper, status: active, role: technical}
     - {prefix: 10.1.0.8/31, description: fra-cisco <-> par-nokia, status: active, role: technical}
     - {prefix: 10.1.0.10/31, description: ams-juniper <-> par-nokia, status: active, role: technical}
-
----
-# Backbone interface IPs (12 × /31)
-apiVersion: infrahub.app/v1
-kind: Object
-spec:
-  kind: IpamIPAddress
-  data:
-    # lon <-> fra (10.1.0.0/31)
-    - {address: 10.1.0.0/31, interface: {hfid: [pe-lon-arista, Ethernet1]}}
-    - {address: 10.1.0.1/31, interface: {hfid: [pe-fra-cisco, Ethernet1]}}
-    # lon <-> ams (10.1.0.2/31)
-    - {address: 10.1.0.2/31, interface: {hfid: [pe-lon-arista, Ethernet2]}}
-    - {address: 10.1.0.3/31, interface: {hfid: [pe-ams-juniper, Ethernet1]}}
-    # lon <-> par (10.1.0.4/31)
-    - {address: 10.1.0.4/31, interface: {hfid: [pe-lon-arista, Ethernet3]}}
-    - {address: 10.1.0.5/31, interface: {hfid: [pe-par-nokia, Ethernet1]}}
-    # fra <-> ams (10.1.0.6/31)
-    - {address: 10.1.0.6/31, interface: {hfid: [pe-fra-cisco, Ethernet2]}}
-    - {address: 10.1.0.7/31, interface: {hfid: [pe-ams-juniper, Ethernet2]}}
-    # fra <-> par (10.1.0.8/31)
-    - {address: 10.1.0.8/31, interface: {hfid: [pe-fra-cisco, Ethernet3]}}
-    - {address: 10.1.0.9/31, interface: {hfid: [pe-par-nokia, Ethernet2]}}
-    # ams <-> par (10.1.0.10/31)
-    - {address: 10.1.0.10/31, interface: {hfid: [pe-ams-juniper, Ethernet3]}}
-    - {address: 10.1.0.11/31, interface: {hfid: [pe-par-nokia, Ethernet3]}}
 
 ---
 # ISIS processes
@@ -237,24 +331,121 @@ spec:
 
 ---
 # iBGP overlay sessions (6 pairs in full mesh, 12 RoutingBGPSession rows: one per direction)
+# local_ip / remote_ip use bare HFID list: [address, namespace]
 apiVersion: infrahub.app/v1
 kind: Object
 spec:
   kind: RoutingBGPSession
   data:
     # pe-lon-arista -> peers
-    - {description: lon-arista to fra-cisco, session_type: INTERNAL, role: backbone, device: pe-lon-arista, local_as: OpsMillNet-AS, remote_as: OpsMillNet-AS, local_ip: 10.0.0.1/32, remote_ip: 10.0.0.2/32, status: active}
-    - {description: lon-arista to ams-juniper, session_type: INTERNAL, role: backbone, device: pe-lon-arista, local_as: OpsMillNet-AS, remote_as: OpsMillNet-AS, local_ip: 10.0.0.1/32, remote_ip: 10.0.0.3/32, status: active}
-    - {description: lon-arista to par-nokia, session_type: INTERNAL, role: backbone, device: pe-lon-arista, local_as: OpsMillNet-AS, remote_as: OpsMillNet-AS, local_ip: 10.0.0.1/32, remote_ip: 10.0.0.4/32, status: active}
+    - description: lon-arista to fra-cisco
+      session_type: INTERNAL
+      role: backbone
+      device: pe-lon-arista
+      local_as: ["65000", "OpsMillNet-AS"]
+      remote_as: ["65000", "OpsMillNet-AS"]
+      local_ip: ["10.0.0.1/32", "default"]
+      remote_ip: ["10.0.0.2/32", "default"]
+      status: active
+    - description: lon-arista to ams-juniper
+      session_type: INTERNAL
+      role: backbone
+      device: pe-lon-arista
+      local_as: ["65000", "OpsMillNet-AS"]
+      remote_as: ["65000", "OpsMillNet-AS"]
+      local_ip: ["10.0.0.1/32", "default"]
+      remote_ip: ["10.0.0.3/32", "default"]
+      status: active
+    - description: lon-arista to par-nokia
+      session_type: INTERNAL
+      role: backbone
+      device: pe-lon-arista
+      local_as: ["65000", "OpsMillNet-AS"]
+      remote_as: ["65000", "OpsMillNet-AS"]
+      local_ip: ["10.0.0.1/32", "default"]
+      remote_ip: ["10.0.0.4/32", "default"]
+      status: active
     # pe-fra-cisco -> peers
-    - {description: fra-cisco to lon-arista, session_type: INTERNAL, role: backbone, device: pe-fra-cisco, local_as: OpsMillNet-AS, remote_as: OpsMillNet-AS, local_ip: 10.0.0.2/32, remote_ip: 10.0.0.1/32, status: active}
-    - {description: fra-cisco to ams-juniper, session_type: INTERNAL, role: backbone, device: pe-fra-cisco, local_as: OpsMillNet-AS, remote_as: OpsMillNet-AS, local_ip: 10.0.0.2/32, remote_ip: 10.0.0.3/32, status: active}
-    - {description: fra-cisco to par-nokia, session_type: INTERNAL, role: backbone, device: pe-fra-cisco, local_as: OpsMillNet-AS, remote_as: OpsMillNet-AS, local_ip: 10.0.0.2/32, remote_ip: 10.0.0.4/32, status: active}
+    - description: fra-cisco to lon-arista
+      session_type: INTERNAL
+      role: backbone
+      device: pe-fra-cisco
+      local_as: ["65000", "OpsMillNet-AS"]
+      remote_as: ["65000", "OpsMillNet-AS"]
+      local_ip: ["10.0.0.2/32", "default"]
+      remote_ip: ["10.0.0.1/32", "default"]
+      status: active
+    - description: fra-cisco to ams-juniper
+      session_type: INTERNAL
+      role: backbone
+      device: pe-fra-cisco
+      local_as: ["65000", "OpsMillNet-AS"]
+      remote_as: ["65000", "OpsMillNet-AS"]
+      local_ip: ["10.0.0.2/32", "default"]
+      remote_ip: ["10.0.0.3/32", "default"]
+      status: active
+    - description: fra-cisco to par-nokia
+      session_type: INTERNAL
+      role: backbone
+      device: pe-fra-cisco
+      local_as: ["65000", "OpsMillNet-AS"]
+      remote_as: ["65000", "OpsMillNet-AS"]
+      local_ip: ["10.0.0.2/32", "default"]
+      remote_ip: ["10.0.0.4/32", "default"]
+      status: active
     # pe-ams-juniper -> peers
-    - {description: ams-juniper to lon-arista, session_type: INTERNAL, role: backbone, device: pe-ams-juniper, local_as: OpsMillNet-AS, remote_as: OpsMillNet-AS, local_ip: 10.0.0.3/32, remote_ip: 10.0.0.1/32, status: active}
-    - {description: ams-juniper to fra-cisco, session_type: INTERNAL, role: backbone, device: pe-ams-juniper, local_as: OpsMillNet-AS, remote_as: OpsMillNet-AS, local_ip: 10.0.0.3/32, remote_ip: 10.0.0.2/32, status: active}
-    - {description: ams-juniper to par-nokia, session_type: INTERNAL, role: backbone, device: pe-ams-juniper, local_as: OpsMillNet-AS, remote_as: OpsMillNet-AS, local_ip: 10.0.0.3/32, remote_ip: 10.0.0.4/32, status: active}
+    - description: ams-juniper to lon-arista
+      session_type: INTERNAL
+      role: backbone
+      device: pe-ams-juniper
+      local_as: ["65000", "OpsMillNet-AS"]
+      remote_as: ["65000", "OpsMillNet-AS"]
+      local_ip: ["10.0.0.3/32", "default"]
+      remote_ip: ["10.0.0.1/32", "default"]
+      status: active
+    - description: ams-juniper to fra-cisco
+      session_type: INTERNAL
+      role: backbone
+      device: pe-ams-juniper
+      local_as: ["65000", "OpsMillNet-AS"]
+      remote_as: ["65000", "OpsMillNet-AS"]
+      local_ip: ["10.0.0.3/32", "default"]
+      remote_ip: ["10.0.0.2/32", "default"]
+      status: active
+    - description: ams-juniper to par-nokia
+      session_type: INTERNAL
+      role: backbone
+      device: pe-ams-juniper
+      local_as: ["65000", "OpsMillNet-AS"]
+      remote_as: ["65000", "OpsMillNet-AS"]
+      local_ip: ["10.0.0.3/32", "default"]
+      remote_ip: ["10.0.0.4/32", "default"]
+      status: active
     # pe-par-nokia -> peers
-    - {description: par-nokia to lon-arista, session_type: INTERNAL, role: backbone, device: pe-par-nokia, local_as: OpsMillNet-AS, remote_as: OpsMillNet-AS, local_ip: 10.0.0.4/32, remote_ip: 10.0.0.1/32, status: active}
-    - {description: par-nokia to fra-cisco, session_type: INTERNAL, role: backbone, device: pe-par-nokia, local_as: OpsMillNet-AS, remote_as: OpsMillNet-AS, local_ip: 10.0.0.4/32, remote_ip: 10.0.0.2/32, status: active}
-    - {description: par-nokia to ams-juniper, session_type: INTERNAL, role: backbone, device: pe-par-nokia, local_as: OpsMillNet-AS, remote_as: OpsMillNet-AS, local_ip: 10.0.0.4/32, remote_ip: 10.0.0.3/32, status: active}
+    - description: par-nokia to lon-arista
+      session_type: INTERNAL
+      role: backbone
+      device: pe-par-nokia
+      local_as: ["65000", "OpsMillNet-AS"]
+      remote_as: ["65000", "OpsMillNet-AS"]
+      local_ip: ["10.0.0.4/32", "default"]
+      remote_ip: ["10.0.0.1/32", "default"]
+      status: active
+    - description: par-nokia to fra-cisco
+      session_type: INTERNAL
+      role: backbone
+      device: pe-par-nokia
+      local_as: ["65000", "OpsMillNet-AS"]
+      remote_as: ["65000", "OpsMillNet-AS"]
+      local_ip: ["10.0.0.4/32", "default"]
+      remote_ip: ["10.0.0.2/32", "default"]
+      status: active
+    - description: par-nokia to ams-juniper
+      session_type: INTERNAL
+      role: backbone
+      device: pe-par-nokia
+      local_as: ["65000", "OpsMillNet-AS"]
+      remote_as: ["65000", "OpsMillNet-AS"]
+      local_ip: ["10.0.0.4/32", "default"]
+      remote_ip: ["10.0.0.3/32", "default"]
+      status: active
