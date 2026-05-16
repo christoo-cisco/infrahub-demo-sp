@@ -15,7 +15,7 @@ Catalog.
 git clone https://github.com/opsmill/infrahub-demo-sp.git
 cd infrahub-demo-sp
 cp .env.example .env
-set -a; source .env; set +a
+source .env
 uv sync
 uv run invoke init
 ```
@@ -26,21 +26,3 @@ enable the Streamlit Service Catalog sidecar set
 
 See the [quickstart guide](https://docs.infrahub.app/demo-sp/quickstart) for
 the step-by-step walkthrough.
-
----
-
-## Development
-
-```bash
-uv run invoke lint    # ruff, mypy, yamllint
-uv run pytest         # unit + integration tests
-```
-
-See [AGENTS.md](./AGENTS.md) for repository conventions and [docs/AGENTS.md](./docs/AGENTS.md)
-for documentation-site contributions.
-
----
-
-## License
-
-MIT — see [LICENSE.txt](LICENSE.txt).
