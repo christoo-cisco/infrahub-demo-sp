@@ -38,7 +38,7 @@ def display_logo() -> None:
     """Render the OpsMillNet logo in the Streamlit sidebar."""
     logo = ASSETS_DIR / "logo.svg"
     if logo.exists():
-        st.sidebar.image(str(logo), use_column_width=True)
+        st.sidebar.image(str(logo), width="stretch")
     st.sidebar.markdown("# Service Catalog")
 
 
