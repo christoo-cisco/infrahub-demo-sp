@@ -175,7 +175,7 @@ def info(c: Context) -> None:
         f"[cyan]Compose tag:[/cyan]      {INFRAHUB_VERSION} [dim](INFRAHUB_VERSION env var)[/dim]\n"
         f"[cyan]Compose source:[/cyan]   {_compose_source()}\n"
         f"[cyan]Dataset:[/cyan]          {INFRAHUB_DATASET}\n"
-        f"[cyan]Local git:[/cyan]       {'enabled' if INFRAHUB_GIT_LOCAL else 'disabled'}\n"
+        f"[cyan]Local git:[/cyan]        {'enabled' if INFRAHUB_GIT_LOCAL else 'disabled'}\n"
         f"[cyan]Service catalog:[/cyan]  {'enabled' if INFRAHUB_SERVICE_CATALOG else 'disabled'}"
     )
     _banner("Infrahub demo-sp configuration", body=body, border="blue")
