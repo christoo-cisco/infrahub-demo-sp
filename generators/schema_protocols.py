@@ -340,11 +340,12 @@ class OrganizationManufacturer(OrganizationGeneric):
     tags: RelationshipManager
 
 
-class TopologyMplsBackbone(TopologyGeneric):
+class TopologyMplsBackbone(CoreArtifactTarget, TopologyGeneric):
     description: StringOptional
     isis_area: String
     isis_level: Dropdown
     name: String
+    artifacts: RelationshipManager
     asn: RelatedNode
     location: RelatedNode
     member_of_groups: RelationshipManager
@@ -1018,6 +1019,7 @@ class ProfileTopologyMplsBackbone(LineageSource, CoreProfile, CoreNode):
     isis_level: DropdownOptional
     profile_name: String
     profile_priority: Integer
+    artifacts: RelationshipManager
     asn: RelatedNode
     location: RelatedNode
     member_of_groups: RelationshipManager

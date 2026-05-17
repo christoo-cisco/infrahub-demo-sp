@@ -139,6 +139,28 @@ def list_tasks(c: Context) -> None:
     console.print()
 
 
+def _running_infrahub_version() -> str:
+    """Query the running Infrahub server for its actual version.
+
+    Returns "(server not reachable)" if the API can't be hit — this task
+    needs to work even when containers are down.
+    """
+    try:
+        import json
+        import urllib.request
+
+        address = os.getenv("INFRAHUB_ADDRESS", "http://localhost:8000")
+        token = os.getenv("INFRAHUB_API_TOKEN", "")
+        req = urllib.request.Request(
+            f"{address}/api/info",
+            headers={"X-INFRAHUB-KEY": token} if token else {},
+        )
+        with urllib.request.urlopen(req, timeout=2) as resp:
+            return json.loads(resp.read()).get("version", "unknown")
+    except Exception:
+        return "(server not reachable)"
+
+
 @task
 def info(c: Context) -> None:
     """Show the current demo configuration."""
@@ -147,13 +169,14 @@ def info(c: Context) -> None:
     except importlib.metadata.PackageNotFoundError:
         sdk_version = "unknown"
     body = (
-        f"[cyan]Project:[/cyan]         {COMPOSE_PROJECT}\n"
-        f"[cyan]Infrahub:[/cyan]        {INFRAHUB_VERSION}\n"
-        f"[cyan]Infrahub SDK:[/cyan]    {sdk_version}\n"
-        f"[cyan]Compose source:[/cyan] {_compose_source()}\n"
-        f"[cyan]Dataset:[/cyan]         {INFRAHUB_DATASET}\n"
-        f"[cyan]Local git:[/cyan]      {'enabled' if INFRAHUB_GIT_LOCAL else 'disabled'}\n"
-        f"[cyan]Service catalog:[/cyan] {'enabled' if INFRAHUB_SERVICE_CATALOG else 'disabled'}"
+        f"[cyan]Project:[/cyan]          {COMPOSE_PROJECT}\n"
+        f"[cyan]Infrahub running:[/cyan] {_running_infrahub_version()}\n"
+        f"[cyan]Infrahub SDK:[/cyan]     {sdk_version}\n"
+        f"[cyan]Compose tag:[/cyan]      {INFRAHUB_VERSION} [dim](INFRAHUB_VERSION env var)[/dim]\n"
+        f"[cyan]Compose source:[/cyan]   {_compose_source()}\n"
+        f"[cyan]Dataset:[/cyan]          {INFRAHUB_DATASET}\n"
+        f"[cyan]Local git:[/cyan]       {'enabled' if INFRAHUB_GIT_LOCAL else 'disabled'}\n"
+        f"[cyan]Service catalog:[/cyan]  {'enabled' if INFRAHUB_SERVICE_CATALOG else 'disabled'}"
     )
     _banner("Infrahub demo-sp configuration", body=body, border="blue")
 
