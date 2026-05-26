@@ -29,6 +29,12 @@ management api http-commands
 management ssh
    no shutdown
 !
+! IP routing must be explicitly enabled in cEOS — without this, IS-IS
+! never installs an adjacency ("IS-IS is disabled because: Routing is
+! not enabled"). VRF routing has to be enabled per-VRF below.
+ip routing
+ipv6 unicast-routing
+!
 {% for iface in device.interfaces.edges if iface.node.name.value == 'Loopback0' %}
 interface Loopback0
    description Router-ID / iBGP source
@@ -83,6 +89,8 @@ mpls ldp
 {% set _ = seen_vpns.append(vpn.name.value) %}
 vrf instance {{ vpn.vrf.node.name.value }}
    description L3VPN {{ vpn.name.value }} (vpn-id {{ vpn.vpn_id.value }})
+!
+ip routing vrf {{ vpn.vrf.node.name.value }}
 !
 {% endif %}
 {% endfor %}
