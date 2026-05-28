@@ -77,14 +77,6 @@ set / network-instance default protocols isis instance i1 interface {{ srl_iface
 set / network-instance default protocols isis instance i1 interface {{ srl_iface(iface.node.name.value) }}.0 circuit-type point-to-point
 {% endfor %}
 
-{# MPLS forwarding plane on core interfaces. No label-distribution
-   protocol is configured (LDP isn't in 23.10's protocols enum and
-   SR-ISIS / l3vpn AFs need licensed hardware), so this brings the
-   MPLS subsystem up but no labels are exchanged. #}
-{% for iface in device.interfaces.edges if iface.node.role.value == 'core' %}
-set / network-instance default mpls interface {{ srl_iface(iface.node.name.value) }}.0 admin-state enable
-{% endfor %}
-
 {# iBGP full mesh on loopbacks. ipv4-unicast only — 23.10's afi-safi
    enum is {ipv4-unicast, ipv6-unicast, evpn}; l3vpn-ipv4-unicast is
    not available on the public image, so no VPNv4 routes are carried.

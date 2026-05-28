@@ -63,12 +63,14 @@ async def test_no_l3vpn_ipv4_unicast_afi_safi() -> None:
 async def test_template_omits_unsupported_23_10_constructs() -> None:
     """Lock out every SR Linux 23.10 construct the public clab image rejects.
 
-    The template now renders iBGP (ipv4-unicast only) and the MPLS forwarding
-    plane on top of the ISIS underlay. L3VPN signalling is still off-limits:
-    bgp-vpn, ip-vrf network-instances, l3vpn-*-unicast afi-safi, and the
-    PE-CE eBGP group all need licensed ixr-class hardware that the public
-    23.10 image doesn't provide. LDP is not in 23.10's protocols enum.
-    Production SR OS template (pe_nokia_sros.j2) renders the real L3VPN.
+    The template renders iBGP (ipv4-unicast only) on top of the ISIS underlay.
+    L3VPN signalling is off-limits: bgp-vpn, ip-vrf network-instances,
+    l3vpn-*-unicast afi-safi, and the PE-CE eBGP group all need licensed
+    ixr-class hardware that the public 23.10 image doesn't provide. LDP is
+    not in 23.10's protocols enum. The `mpls` keyword is not valid under
+    `network-instance default` either — the per-interface MPLS forwarding
+    plane has no parser-accepting form on this image. Production SR OS
+    template (pe_nokia_sros.j2) renders the real L3VPN.
     """
     rendered = await PeNokiaSrLinux.__new__(PeNokiaSrLinux).transform(FIXTURE)
     forbidden = [
@@ -78,6 +80,7 @@ async def test_template_omits_unsupported_23_10_constructs() -> None:
         "protocols ldp",
         "l3vpn-ipv4-unicast",
         "l3vpn-ipv6-unicast",
+        "network-instance default mpls",
     ]
     for needle in forbidden:
         assert needle not in rendered, (
@@ -128,21 +131,6 @@ async def test_renders_ibgp_neighbors_from_internal_sessions() -> None:
     assert (
         "set / network-instance default protocols bgp neighbor 10.0.0.1 admin-state enable"
         in rendered
-    )
-
-
-@pytest.mark.asyncio
-async def test_renders_mpls_on_core_interfaces() -> None:
-    """MPLS forwarding plane enabled on every core interface.
-
-    No label-distribution protocol is configured (LDP not in 23.10;
-    SR-ISIS and l3vpn AFs need a license), so this is parser-clean
-    enablement only — no labels are actually exchanged.
-    """
-    rendered = await PeNokiaSrLinux.__new__(PeNokiaSrLinux).transform(FIXTURE)
-    assert (
-        "set / network-instance default mpls interface ethernet-1/Gigabit0/0/0/0.0 "
-        "admin-state enable" in rendered
     )
 
 
