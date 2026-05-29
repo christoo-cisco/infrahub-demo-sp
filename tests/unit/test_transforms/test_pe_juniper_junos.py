@@ -74,6 +74,30 @@ async def test_vrf_table_label_in_each_routing_instance() -> None:
 
 
 @pytest.mark.asyncio
+async def test_translates_arista_iface_to_junos_ge_form() -> None:
+    """Schema names are `Ethernet<N>` (1-indexed); Junos needs `ge-0/0/<N-1>`.
+
+    Without translation the rendered config would have `Ethernet1 { ... }`
+    where Junos expects a real interface name, and a real Junos device
+    would reject the commit. Batfish flagged this as the most common
+    parseWarning when the fix was developed.
+    """
+    rendered = await PeJuniperJunos.__new__(PeJuniperJunos).transform(
+        pe_fixture_with_site("pe-ams-juniper", "10.0.0.3/32", "49.0001.0100.0000.0003.00")
+    )
+    # The schema-form name must never leak through verbatim.
+    assert "Ethernet1 {" not in rendered
+    assert "Ethernet4 {" not in rendered
+    # Core backbone iface (Ethernet1) → ge-0/0/0.
+    assert "ge-0/0/0 {" in rendered
+    # Per-VRF customer iface (Ethernet4) → ge-0/0/3.
+    assert "ge-0/0/3 {" in rendered
+    # ISIS/LDP/MPLS protocol sections reference the same Junos form,
+    # with the .0 unit suffix.
+    assert "interface ge-0/0/0.0" in rendered
+
+
+@pytest.mark.asyncio
 async def test_ce_peer_as_is_per_neighbor_not_group_level() -> None:
     """A group-level peer-as breaks VRFs with multiple CEs at different
     ASNs (Junos keeps only the last `peer-as` line). Each CE must carry

@@ -171,7 +171,8 @@ async def test_core_interface_mtu_adds_l2_header_offset() -> None:
     Fixture has core mtu=9000 → rendered template must say `mtu 9014`.
     """
     rendered = await PeNokiaSrLinux.__new__(PeNokiaSrLinux).transform(FIXTURE)
-    assert "set / interface ethernet-1/Gigabit0/0/0/0 mtu 9014" in rendered
+    # Fixture core iface is `Ethernet1` → srl_iface maps to `ethernet-1/1`.
+    assert "set / interface ethernet-1/1 mtu 9014" in rendered
 
 
 @pytest.mark.asyncio
