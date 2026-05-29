@@ -1,4 +1,10 @@
 {% import '_macros.j2' as m %}
+{# Format marker for static analyzers (e.g. Batfish): without this header,
+   the EOS-specific syntax below (`vrf instance`, `address-family vpn-ipv4`,
+   `neighbor X peer group`, etc.) gets mis-parsed against the Cisco IOS
+   grammar and every line is reported as unrecognized. Idiomatic RANCID
+   hint that Batfish recognizes to pick the Arista grammar. #}
+!RANCID-CONTENT-TYPE: arista
 {% set device = data.DcimDevice.edges[0].node %}
 {% set isis = data.MplsIsisProcess.edges[0].node %}
 {% set ldp = data.MplsLdpProcess.edges[0].node %}

@@ -235,3 +235,16 @@ async def test_vrf_redistribute_connected() -> None:
     ]
     assert "address-family ipv4" in bgp_vrf_section
     assert "redistribute connected" in bgp_vrf_section
+
+
+@pytest.mark.asyncio
+async def test_emits_rancid_arista_format_marker() -> None:
+    """Batfish (and other static analyzers) pick a parser by file header.
+
+    Without a `!RANCID-CONTENT-TYPE: arista` hint, Batfish parses the config
+    against the Cisco IOS grammar — every EOS-specific construct
+    (`vrf instance`, `address-family vpn-ipv4`, `neighbor X peer group`,
+    LDP `transport-address`, …) is reported as unrecognized syntax.
+    """
+    rendered = await PeAristaEos.__new__(PeAristaEos).transform(FIXTURE)
+    assert "!RANCID-CONTENT-TYPE: arista" in rendered
