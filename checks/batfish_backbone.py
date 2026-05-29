@@ -19,7 +19,7 @@ from typing import Any
 from infrahub_sdk.checks import InfrahubCheck
 from infrahub_sdk.exceptions import NodeNotFoundError
 
-from checks.batfish_helpers import (
+from .batfish_helpers import (
     SUPPORTED_PLATFORMS,
     Finding,
     run_snapshot,
