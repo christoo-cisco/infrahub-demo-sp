@@ -18,7 +18,6 @@ from typing import Any
 
 from infrahub_sdk.checks import InfrahubCheck
 from infrahub_sdk.exceptions import NodeNotFoundError
-from pybatfish.client.session import Session
 
 from checks.batfish_helpers import (
     SUPPORTED_PLATFORMS,
@@ -26,6 +25,12 @@ from checks.batfish_helpers import (
     run_snapshot,
     wait_for_batfish,
 )
+
+# ``pybatfish`` is a runtime-only dependency: the worker container that
+# loads this module at registration time may not have it installed.
+# Importing at module scope used to fail the whole repo import (blocking
+# every other check + generator), so defer it to ``validate()`` and
+# treat ImportError as a soft "skip this check" signal.
 
 _ARTIFACT_NAME_BY_PLATFORM = {
     "arista_eos": "pe-arista-eos",
@@ -48,6 +53,11 @@ class BatfishBackboneCheck(InfrahubCheck):
         """
         if os.environ.get("BATFISH_DISABLED") == "1":
             self.log_info(message="Batfish disabled by environment")
+            return
+        try:
+            from pybatfish.client.session import Session  # noqa: F401, PLC0415
+        except ImportError:
+            self.log_info(message="pybatfish not installed in this environment; check skipped")
             return
 
         for edge in data.get("TopologyMplsBackbone", {}).get("edges", []):
@@ -92,6 +102,9 @@ class BatfishBackboneCheck(InfrahubCheck):
             if not wait_for_batfish(host, port=port, timeout_s=60, backoff_s=2):
                 self.log_error(message=f"Batfish service unreachable at {host}:{port}")
                 return
+
+            # Deferred import — see module docstring + ``validate()``.
+            from pybatfish.client.session import Session  # noqa: PLC0415
 
             session = Session(host=host)
             snapshot_name = f"{backbone_name}-{uuid.uuid4().hex[:8]}"

@@ -51,7 +51,7 @@ async def test_happy_path_no_findings() -> None:
 
     with (
         patch("checks.batfish_backbone.wait_for_batfish", return_value=True),
-        patch("checks.batfish_backbone.Session") as session_cls,
+        patch("pybatfish.client.session.Session") as session_cls,
         patch("checks.batfish_backbone.run_snapshot", side_effect=capture) as run_snap,
     ):
         await check.validate(data)
@@ -81,7 +81,7 @@ async def test_nokia_pes_skipped_from_snapshot() -> None:
 
     with (
         patch("checks.batfish_backbone.wait_for_batfish", return_value=True),
-        patch("checks.batfish_backbone.Session"),
+        patch("pybatfish.client.session.Session"),
         patch("checks.batfish_backbone.run_snapshot", side_effect=capture),
     ):
         await check.validate(data)
@@ -108,7 +108,7 @@ async def test_missing_artifact_excluded_but_does_not_fail() -> None:
 
     with (
         patch("checks.batfish_backbone.wait_for_batfish", return_value=True),
-        patch("checks.batfish_backbone.Session"),
+        patch("pybatfish.client.session.Session"),
         patch("checks.batfish_backbone.run_snapshot", side_effect=capture),
     ):
         await check.validate(data)
@@ -127,7 +127,7 @@ async def test_all_pes_skipped_short_circuits() -> None:
 
     with (
         patch("checks.batfish_backbone.wait_for_batfish", return_value=True),
-        patch("checks.batfish_backbone.Session") as session_cls,
+        patch("pybatfish.client.session.Session") as session_cls,
         patch("checks.batfish_backbone.run_snapshot") as run_snap,
     ):
         await check.validate(data)
@@ -147,7 +147,7 @@ async def test_disabled_via_env(monkeypatch: pytest.MonkeyPatch) -> None:
     check.client = MagicMock()
     check._fetch_artifact = AsyncMock()  # type: ignore[attr-defined]
 
-    with patch("checks.batfish_backbone.Session") as session_cls:
+    with patch("pybatfish.client.session.Session") as session_cls:
         await check.validate(data)
 
     assert not session_cls.called
@@ -164,7 +164,7 @@ async def test_batfish_unreachable_logs_error() -> None:
 
     with (
         patch("checks.batfish_backbone.wait_for_batfish", return_value=False),
-        patch("checks.batfish_backbone.Session") as session_cls,
+        patch("pybatfish.client.session.Session") as session_cls,
         patch("checks.batfish_backbone.run_snapshot") as run_snap,
     ):
         await check.validate(data)
@@ -200,7 +200,7 @@ async def test_error_findings_become_check_errors() -> None:
 
     with (
         patch("checks.batfish_backbone.wait_for_batfish", return_value=True),
-        patch("checks.batfish_backbone.Session"),
+        patch("pybatfish.client.session.Session"),
         patch(
             "checks.batfish_backbone.run_snapshot",
             return_value=[error_finding, warning_finding],
