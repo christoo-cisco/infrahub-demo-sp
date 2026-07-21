@@ -1,8 +1,7 @@
 {% import '_macros.j2' as m %}
 {% set device = data.DcimDevice.edges[0].node %}
-{% set isis = data.MplsIsisProcess.edges[0].node %}
-{% set ldp = data.MplsLdpProcess.edges[0].node %}
-{% set bgp = data.MplsBgpProcess.edges[0].node %}
+{# {% set isis = data.MplsIsisProcess.edges[0].node %}
+{% set ldp = data.MplsLdpProcess.edges[0].node %} #}
 !
 ! Cisco IOS-XR configuration for {{ device.name.value }}
 !
