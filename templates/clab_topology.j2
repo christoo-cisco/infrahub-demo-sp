@@ -1,11 +1,7 @@
 {% set backbone = data.TopologyMplsBackbone.edges[0].node %}
-{% set labbed_kinds = ['ceos', 'srl'] %}
-{% set labbed_pes = [] %}
-{% for pe_edge in backbone.pes.edges %}
-{% if pe_edge.node.platform.node.containerlab_os.value in labbed_kinds %}
-{% set _ = labbed_pes.append(pe_edge.node) %}
-{% endif %}
-{% endfor %}
+{# `labbed_pes` (the lab-deployable PE nodes) is supplied by the transform so
+   the "which PEs are lab-deployable" rule lives in one place — see
+   transforms/clab_topology.py:_labbed_pes. #}
 {# Translate an Infrahub interface name (e.g. "Ethernet4") to the form clab
    needs for the link endpoint, based on the container kind.
    - ceos: data ports are eth1, eth2, ... (clab maps eth<N> ↔ Ethernet<N>)
@@ -78,19 +74,14 @@ topology:
 {% endfor %}
 
   links:
-{% set arista = [none] %}
-{% set nokia = [none] %}
-{% for pe in labbed_pes %}
-{% if pe.platform.node.name.value == 'arista_eos' %}
-{% set _ = arista.__setitem__(0, pe) %}
-{% endif %}
-{% if pe.platform.node.name.value == 'nokia_sros' %}
-{% set _ = nokia.__setitem__(0, pe) %}
-{% endif %}
+{# Backbone p2p links, derived in the transform by pairing the core
+   interfaces of lab-deployable PEs that share a /31. Renders every backbone
+   link whose two endpoints are both lab-deployable (all of them when the
+   backbone is single-vendor cEOS; only the Arista↔Nokia link in the mixed
+   ISP dataset). #}
+{% for link in backbone_links %}
+    - endpoints: ["{{ link.endpoints[0].device }}:{{ clab_iface(link.endpoints[0].iface, link.endpoints[0].kind) }}", "{{ link.endpoints[1].device }}:{{ clab_iface(link.endpoints[1].iface, link.endpoints[1].kind) }}"]
 {% endfor %}
-{% if arista[0] and nokia[0] %}
-    - endpoints: ["{{ arista[0].name.value }}:{{ clab_iface('Ethernet3', 'ceos') }}", "{{ nokia[0].name.value }}:{{ clab_iface('Ethernet1', 'srl') }}"]
-{% endif %}
 {% for site_edge in materialized_sites %}
 {% set site = site_edge.node %}
 {% set pe_platform = site.pe_device.node.platform.node.name.value %}
