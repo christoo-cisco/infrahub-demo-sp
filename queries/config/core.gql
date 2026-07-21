@@ -1,0 +1,53 @@
+query PE($device: String!) {
+  DcimDevice(name__value: $device) {
+    edges {
+      node {
+        id
+        name { value }
+        platform { node { name { value } } }
+        interfaces {
+          edges {
+            node {
+              __typename
+              id
+              name { value }
+              description { value }
+              status { value }
+              role { value }
+              mtu { value }
+              ... on InterfacePhysical {
+                ip_addresses {
+                  edges { node { address { value } vrf { node { name { value } } } } }
+                }
+              }
+              ... on InterfaceVirtual {
+                ip_addresses {
+                  edges { node { address { value } vrf { node { name { value } } } } }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  MplsIsisProcess(device__name__value: $device) {
+    edges {
+      node {
+        area_id { value }
+        level { value }
+        net_id { value }
+        interfaces { edges { node { name { value } } } }
+      }
+    }
+  }
+  MplsLdpProcess(device__name__value: $device) {
+    edges {
+      node {
+        router_id { value }
+        transport_address { node { address { value } } }
+        interfaces { edges { node { name { value } } } }
+      }
+    }
+  }
+}

@@ -15,7 +15,13 @@ from invoke.tasks import task
 from rich import box
 from rich.console import Console
 from rich.panel import Panel
-from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
+from rich.progress import (
+    BarColumn,
+    Progress,
+    SpinnerColumn,
+    TextColumn,
+    TimeElapsedColumn,
+)
 from rich.table import Table
 
 console = Console()
@@ -23,9 +29,11 @@ console = Console()
 REPO_ROOT = Path(__file__).resolve().parent
 COMPOSE_PROJECT = "sp-demo"
 INFRAHUB_VERSION = os.getenv("INFRAHUB_VERSION", "stable")
-INFRAHUB_SERVICE_CATALOG = os.getenv("INFRAHUB_SERVICE_CATALOG", "false").lower() == "true"
+INFRAHUB_SERVICE_CATALOG = (
+    os.getenv("INFRAHUB_SERVICE_CATALOG", "true").lower() == "true"
+)
 INFRAHUB_GIT_LOCAL = os.getenv("INFRAHUB_GIT_LOCAL", "false").lower() == "true"
-INFRAHUB_DATASET = os.getenv("INFRAHUB_DATASET", "financial")
+INFRAHUB_DATASET = os.getenv("INFRAHUB_DATASET", "isp")
 INFRAHUB_ENTERPRISE = os.getenv("INFRAHUB_ENTERPRISE", "false").lower() == "true"
 LOCAL_COMPOSE_FILE = REPO_ROOT / "docker-compose.yml"
 OVERRIDE_FILE = REPO_ROOT / "docker-compose.override.yml"
@@ -95,7 +103,9 @@ def _compose_base() -> str:
         if OVERRIDE_FILE.exists():
             cmd += f" -f {OVERRIDE_FILE}"
         return cmd
-    edition_path = f"enterprise/{INFRAHUB_VERSION}" if INFRAHUB_ENTERPRISE else INFRAHUB_VERSION
+    edition_path = (
+        f"enterprise/{INFRAHUB_VERSION}" if INFRAHUB_ENTERPRISE else INFRAHUB_VERSION
+    )
     cmd = f"curl -sf https://infrahub.opsmill.io/{edition_path} | {base} -f -"
     if OVERRIDE_FILE.exists():
         cmd += f" -f {OVERRIDE_FILE}"
@@ -125,7 +135,9 @@ def _task_summary(t: object) -> str:
 @task(name="list")
 def list_tasks(c: Context) -> None:
     """List every available invoke task with its description."""
-    rows: list[tuple[str, str]] = [(t.name, _task_summary(t)) for t in ns.tasks.values()]
+    rows: list[tuple[str, str]] = [
+        (t.name, _task_summary(t)) for t in ns.tasks.values()
+    ]
     rows.extend((f"lab.{t.name}", _task_summary(t)) for t in lab.tasks.values())
     rows.sort(key=lambda row: row[0])
     table = Table(
@@ -239,7 +251,9 @@ def _dataset_files(dataset: str) -> list[Path]:
     """
     overlay_dir = DATASETS_DIR / dataset
     if not overlay_dir.is_dir():
-        available = ", ".join(sorted(p.name for p in DATASETS_DIR.iterdir() if p.is_dir()))
+        available = ", ".join(
+            sorted(p.name for p in DATASETS_DIR.iterdir() if p.is_dir())
+        )
         raise ValueError(f"Unknown dataset {dataset!r}. Available: {available}")
     shared = [p for p in (REPO_ROOT / "objects").glob("*.yml")]
     overlay = list(overlay_dir.glob("*.yml"))
@@ -277,7 +291,9 @@ def bootstrap(c: Context) -> None:
     _success("Bootstrap objects loaded")
 
     repo_file = (
-        "objects/git-repo/local-dev.yml" if INFRAHUB_GIT_LOCAL else "objects/git-repo/github.yml"
+        "objects/git-repo/local-dev.yml"
+        if INFRAHUB_GIT_LOCAL
+        else "objects/git-repo/github.yml"
     )
     _step(f"Registering CoreRepository ({repo_file})")
     c.run(f"uv run infrahubctl object load {shlex.quote(repo_file)}", pty=True)
@@ -461,7 +477,9 @@ def lab_deploy(c: Context) -> None:
     _step(f"Fetching clab-mpls-topology → {LAB_TOPO.relative_to(REPO_ROOT)}")
     _fetch_artifact(c, "clab-mpls-topology", LAB_TOPO)
     _success("Topology artifact fetched")
-    _step(f"Fetching per-PE startup configs → {LAB_DEVICES_DIR.relative_to(REPO_ROOT)}/")
+    _step(
+        f"Fetching per-PE startup configs → {LAB_DEVICES_DIR.relative_to(REPO_ROOT)}/"
+    )
     c.run(
         f"uv run python scripts/fetch_lab_configs.py --out-dir {shlex.quote(str(LAB_DEVICES_DIR))}",
         pty=True,
@@ -494,7 +512,9 @@ def lab_deploy(c: Context) -> None:
         pty=False,
         warn=True,
     )
-    c.run(f"docker network rm clab-{shlex.quote(lab_name)} 2>/dev/null || true", warn=True)
+    c.run(
+        f"docker network rm clab-{shlex.quote(lab_name)} 2>/dev/null || true", warn=True
+    )
     _step("Running containerlab deploy")
     c.run(f"containerlab deploy --topo {LAB_TOPO}", pty=True)
     _success("Lab deployed")
@@ -550,7 +570,9 @@ def lab_push_arista(c: Context) -> None:
     for node_name in ceos_nodes:
         cfg = LAB_DEVICES_DIR / f"{node_name}.cfg"
         if not cfg.exists():
-            _wait(f"No config at {cfg.relative_to(REPO_ROOT)}; run `invoke lab.deploy` first.")
+            _wait(
+                f"No config at {cfg.relative_to(REPO_ROOT)}; run `invoke lab.deploy` first."
+            )
             continue
         host = f"clab-{lab_name}-{node_name}"
         _step(f"Pushing {cfg.relative_to(REPO_ROOT)} → {host}")

@@ -1,0 +1,61 @@
+{% import '_macros.j2' as m %}
+{% set device = data.DcimDevice.edges[0].node %}
+{% set isis = data.MplsIsisProcess.edges[0].node %}
+{% set ldp = data.MplsLdpProcess.edges[0].node %}
+{% set bgp = data.MplsBgpProcess.edges[0].node %}
+!
+! Cisco IOS-XR configuration for {{ device.name.value }}
+!
+hostname {{ device.name.value }}
+!
+route-policy PASS-ALL
+  pass
+end-policy
+!
+{# 1. Loopback interface #}
+{% for iface in device.interfaces.edges if iface.node.name.value == 'Loopback0' %}
+interface Loopback0
+ description Router-ID / iBGP source
+{% for ip in iface.node.ip_addresses.edges %}
+ ipv4 address {{ m.ip_only(ip.node.address.value) }} 255.255.255.255
+{% endfor %}
+!
+{% endfor %}
+{# 2. Backbone interfaces #}
+{% for iface in device.interfaces.edges if iface.node.role.value == 'core' %}
+interface {{ m.iosxr_iface(iface.node.name.value) }}
+ description {{ iface.node.description.value }}
+ mtu {{ iface.node.mtu.value }}
+{% for ip in iface.node.ip_addresses.edges %}
+ ipv4 address {{ m.ip_only(ip.node.address.value) }} 255.255.255.254
+{% endfor %}
+ no shutdown
+!
+{% endfor %}
+{# 5. ISIS process #}
+{# router isis Core
+ net {{ isis.net_id.value }}
+ is-type level-2-only
+ address-family ipv4 unicast
+  metric-style wide
+ !
+ address-family ipv6 unicast
+  metric-style wide
+ !
+{% for iface in device.interfaces.edges if iface.node.role.value == 'core' %}
+ interface {{ m.iosxr_iface(iface.node.name.value) }}
+  point-to-point
+  address-family ipv4 unicast
+  !
+ !
+{% endfor %} #}
+!
+{# 6. MPLS LDP #}
+{# mpls ldp
+ router-id {{ ldp.router_id.value }}
+{% for iface in device.interfaces.edges if iface.node.role.value == 'core' %}
+ interface {{ m.iosxr_iface(iface.node.name.value) }}
+ !
+{% endfor %}
+! #}
+end

@@ -5,5 +5,5 @@ spec:
   kind: CoreReadOnlyRepository
   data:
     - name: infrahub-demo-sp
-      location: "https://github.com/opsmill/infrahub-demo-sp.git"
+      location: "https://github.com/christoo-cisco/infrahub-demo-sp"
       ref: "main"

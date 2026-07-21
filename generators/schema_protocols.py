@@ -108,6 +108,10 @@ class LocationHosting(CoreNode):
     profiles: RelationshipManager
     subscriber_of_groups: RelationshipManager
 
+class CoreIPPool(CoreNode):
+    member_of_groups: RelationshipManager
+    subscriber_of_groups: RelationshipManager
+
 class DcimInterface(CoreNode):
     description: StringOptional
     mtu: Integer
@@ -444,6 +448,34 @@ class IpamRouteTarget(CoreNode):
     profiles: RelationshipManager
     subscriber_of_groups: RelationshipManager
     vrf: RelationshipManager
+
+
+class ServiceSdwan(CoreNode):
+    description: StringOptional
+    name: String
+    service_id: Integer
+    status: Dropdown
+    topology: Dropdown
+    vendor: Dropdown
+    member_of_groups: RelationshipManager
+    profiles: RelationshipManager
+    sites: RelationshipManager
+    subscriber_of_groups: RelationshipManager
+    tenant: RelatedNode
+
+
+class ServiceSdwanSite(CoreNode):
+    name: String
+    role: Dropdown
+    status: Dropdown
+    lan_address: RelatedNode
+    lan_subnet: RelatedNode
+    location: RelatedNode
+    member_of_groups: RelationshipManager
+    profiles: RelationshipManager
+    sdwan: RelatedNode
+    sdwan_edge: RelatedNode
+    subscriber_of_groups: RelationshipManager
 
 
 class LocationSite(LocationGeneric, LocationHosting):
@@ -1000,6 +1032,33 @@ class ProfileServiceL3VpnSite(LineageSource, CoreProfile, CoreNode):
     pe_device: RelatedNode
     pe_interface: RelatedNode
     related_nodes: RelationshipManager
+    subscriber_of_groups: RelationshipManager
+
+
+class ProfileServiceSdwan(LineageSource, CoreProfile, CoreNode):
+    description: StringOptional
+    profile_name: String
+    profile_priority: Integer
+    status: DropdownOptional
+    topology: DropdownOptional
+    vendor: DropdownOptional
+    member_of_groups: RelationshipManager
+    related_nodes: RelationshipManager
+    subscriber_of_groups: RelationshipManager
+    tenant: RelatedNode
+
+
+class ProfileServiceSdwanSite(LineageSource, CoreProfile, CoreNode):
+    profile_name: String
+    profile_priority: Integer
+    role: DropdownOptional
+    status: DropdownOptional
+    lan_address: RelatedNode
+    lan_subnet: RelatedNode
+    location: RelatedNode
+    member_of_groups: RelationshipManager
+    related_nodes: RelationshipManager
+    sdwan_edge: RelatedNode
     subscriber_of_groups: RelationshipManager
 
 

@@ -13,6 +13,7 @@ menus:
 queries:
   - {name: l3vpn, file_path: queries/service/l3vpn.gql}
   - {name: pe, file_path: queries/config/pe.gql}
+  - {name: core, file_path: queries/config/core.gql}
   - {name: clab_topology, file_path: queries/topology/clab.gql}
   - {name: l3vpn_overlap, file_path: queries/validation/l3vpn_overlap.gql}
   - {name: l3vpn_site_subnet, file_path: queries/validation/l3vpn_site_subnet.gql}
@@ -26,6 +27,7 @@ queries:
 python_transforms:
   - {name: pe_arista_eos, class_name: PeAristaEos, file_path: transforms/pe_arista_eos.py}
   - {name: pe_cisco_iosxr, class_name: PeCiscoIosXr, file_path: transforms/pe_cisco_iosxr.py}
+  - {name: core_cisco_iosxr, class_name: CoreCiscoIosXr, file_path: transforms/core_cisco_iosxr.py}
   - {name: pe_juniper_junos, class_name: PeJuniperJunos, file_path: transforms/pe_juniper_junos.py}
   - {name: pe_nokia_sros, class_name: PeNokiaSrOs, file_path: transforms/pe_nokia_sros.py}
   - {name: pe_nokia_srlinux, class_name: PeNokiaSrLinux, file_path: transforms/pe_nokia_srlinux.py}
@@ -45,6 +47,12 @@ artifact_definitions:
     content_type: text/plain
     targets: pe_cisco_iosxr
     transformation: pe_cisco_iosxr
+    parameters: {device: name__value}
+  - name: core-cisco-iosxr-config
+    artifact_name: core-cisco-iosxr
+    content_type: text/plain
+    targets: core_cisco_iosxr
+    transformation: core_cisco_iosxr
     parameters: {device: name__value}
   - name: pe-juniper-junos-config
     artifact_name: pe-juniper-junos
