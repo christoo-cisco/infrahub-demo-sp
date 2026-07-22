@@ -39,10 +39,10 @@ class L3VpnGenerator(InfrahubGenerator):
         if not vpn["sites"]["edges"]:
             raise RuntimeError("ServiceL3Vpn has no sites")
         first_site = vpn["sites"]["edges"][0]["node"]
-        pe_location_id = first_site["pe_device"]["node"]["location"]["node"]["id"]
-        pe_location_name = first_site["pe_device"]["node"]["location"]["node"]["name"][
-            "value"
-        ]
+        pe_location_node = first_site["pe_device"]["node"]["location"]["node"]
+        pe_location_id = pe_location_node["id"]
+        # Location name from inline fragment (LocationGeneric or LocationSite)
+        pe_location_name = (pe_location_node.get("name") or {}).get("value", "unknown")
 
         # Find the RoutingAutonomousSystem for this location
         backbone_as_edges = payload.get("RoutingAutonomousSystem", {}).get("edges", [])

@@ -25,7 +25,12 @@ query L3Vpn($name: String!) {
                   location {
                     node {
                       id
-                      name { value }
+                      ... on LocationGeneric {
+                        name { value }
+                      }
+                      ... on LocationSite {
+                        name { value }
+                      }
                     }
                   }
                 }
@@ -42,7 +47,17 @@ query L3Vpn($name: String!) {
       node {
         id
         asn { value }
-        location { node { id name { value } } }
+        location {
+          node {
+            id
+            ... on LocationGeneric {
+              name { value }
+            }
+            ... on LocationSite {
+              name { value }
+            }
+          }
+        }
       }
     }
   }
