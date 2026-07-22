@@ -8,9 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements-like dependencies from script
-RUN pip install --no-cache-dir \
-    aiohttp>=3.8.0 \
-    infrahub-sdk[all]>=1.21.1,<2.0.0
+RUN pip install --no-cache-dir aiohttp>=3.8.0 'infrahub-sdk[all]>=1.21.1,<2.0.0'
 
 # Copy reconciler script
 COPY scripts/device_group_reconciler.py /app/device_group_reconciler.py
