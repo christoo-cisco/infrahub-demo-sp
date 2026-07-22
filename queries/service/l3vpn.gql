@@ -17,11 +17,32 @@ query L3Vpn($name: String!) {
               bgp_peer_asn { value }
               static_routes { value }
               status { value }
-              pe_device { node { id name { value } platform { node { name { value } } } } }
+              pe_device {
+                node {
+                  id
+                  name { value }
+                  platform { node { name { value } } }
+                  location {
+                    node {
+                      id
+                      name { value }
+                    }
+                  }
+                }
+              }
               customer_subnet { node { id prefix { value } } }
             }
           }
         }
+      }
+    }
+  }
+  RoutingAutonomousSystem {
+    edges {
+      node {
+        id
+        asn { value }
+        location { node { id name { value } } }
       }
     }
   }

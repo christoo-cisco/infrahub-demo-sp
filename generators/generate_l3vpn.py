@@ -35,14 +35,32 @@ class L3VpnGenerator(InfrahubGenerator):
             return
         vpn = vpn_edges[0]["node"]
 
-        # backbone_edges = payload.get("TopologyMplsBackbone", {}).get("edges", [])
-        # if not backbone_edges:
-        #     raise RuntimeError("TopologyMplsBackbone mpls-backbone-1 not found")
-        # backbone_node = backbone_edges[0]["node"]
-        # backbone_asn = int(backbone_node["asn"]["node"]["asn"]["value"])
-        # backbone_as_id: str = backbone_node["asn"]["node"]["id"]
-        backbone_asn = 65000
-        backbone_as_id = "65000"
+        # Get the first site to determine the backbone ASN from its PE location
+        if not vpn["sites"]["edges"]:
+            raise RuntimeError("ServiceL3Vpn has no sites")
+        first_site = vpn["sites"]["edges"][0]["node"]
+        pe_location_id = first_site["pe_device"]["node"]["location"]["node"]["id"]
+        pe_location_name = first_site["pe_device"]["node"]["location"]["node"]["name"][
+            "value"
+        ]
+
+        # Find the RoutingAutonomousSystem for this location
+        backbone_as_edges = payload.get("RoutingAutonomousSystem", {}).get("edges", [])
+        backbone_as = None
+        for as_edge in backbone_as_edges:
+            as_node = as_edge["node"]
+            as_location = (as_node.get("location") or {}).get("node")
+            if as_location and as_location["id"] == pe_location_id:
+                backbone_as = as_node
+                break
+
+        if not backbone_as:
+            raise RuntimeError(
+                f"No RoutingAutonomousSystem found for location {pe_location_name}"
+            )
+
+        backbone_asn = int(backbone_as["asn"]["value"])
+        backbone_as_id: str = backbone_as["id"]
 
         vrf = await self._ensure_vrf(vpn, backbone_asn)
 
@@ -99,7 +117,7 @@ class L3VpnGenerator(InfrahubGenerator):
             site: Site node from the GraphQL query result.
             vrf: The IpamVRF node for this L3VPN.
             vpn: The ServiceL3Vpn node from the GraphQL query result.
-            backbone_as_id: Infrahub ID of the backbone RoutingAutonomousSystem node.
+            backbone_as_id: Infrahub ID of the location's RoutingAutonomousSystem node.
         """
         site_obj = await self.client.get(
             kind="ServiceL3VpnSite",
@@ -110,8 +128,7 @@ class L3VpnGenerator(InfrahubGenerator):
 
         # Idempotency via deterministic keys (client.filters / pool identifier),
         # NOT the generator query (the query must not return pe_interface /
-        # pe_address / ce_address, which this generator creates — see
-        # queries/service/l3vpn.gql and _ensure_vrf). The per-PE interface is
+        # pe_address / ce_address, which this generator creates). The per-PE interface is
         # keyed by its description; the /30 is allocated from the pool under a
         # per-site identifier (idempotent); the PE/CE IPs are keyed by address.
         iface_desc = f"L3VPN {vpn['name']['value']}"
@@ -212,8 +229,8 @@ class L3VpnGenerator(InfrahubGenerator):
             site_obj: The live ServiceL3VpnSite Infrahub node.
             vrf: The IpamVRF node for this L3VPN.
             vpn_name: Human-readable VPN name (for the session description).
-            backbone_as_id: Infrahub ID of the backbone RoutingAutonomousSystem — derived
-                from the query result to avoid coupling to a hardcoded AS name.
+            backbone_as_id: Infrahub ID of the location's RoutingAutonomousSystem —
+                derived from the PE device's location to avoid coupling to hardcoded names.
             tenant_id: Infrahub ID of the VPN's tenant — used as the owner of the
                 customer-side RoutingAutonomousSystem when one needs to be created.
         """

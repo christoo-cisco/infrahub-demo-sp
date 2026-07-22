@@ -86,11 +86,69 @@ Schema Definition → Data Loading → Generator Execution → Transform Process
                                    Validation Checks
 ```
 
+## SDK Essentials (CRITICAL)
+
+Understand these patterns before working on generators/transforms/checks:
+
+### Idempotency via `client.filters()` + Deterministic Keys
+- **Core Rule**: Use `self.client.filters(kind="X", name__value=key, branch=self.branch)` for idempotency checks
+- **NOT Query Payloads**: Generators must NOT return objects they create (VRF, interfaces, IPs). Returning them breaks `CoreGraphQLQueryGroupUpsert` tracking on re-run → `NodeNotFound` → branch wiped. See [generators/generate_l3vpn.py](generators/generate_l3vpn.py#L61) for correct pattern.
+
+### Branch Parameter on All Operations
+- Every `client.filters()`, `client.create()`, `client.get()` includes `branch=self.branch`
+- Generators/transforms/checks run on branches; all SDK calls must target same branch
+
+### `.save(allow_upsert=True)` for All Mutations
+- After `client.create()` or field updates, always call `.save(allow_upsert=True)`
+- Ensures re-runs don't fail on existing objects
+
+### Pool Allocation with Status
+- Always pass `data={"status": "active"}` when allocating prefixes
+- `IpamPrefix.status` is required by schema. See [generators/common.py](generators/common.py) for pattern.
+
+### Graceful Unset Relationship Handling
+- Unset relationships return `{"node": None}` (truthy dict, not falsy)
+- Always check: `rel = (node.get("field") or {}).get("node"); if not rel: continue`
+- See [checks/l3vpn_overlap.py](checks/l3vpn_overlap.py#L22) for example.
+
 ### Key Files
 
 - `.infrahub.yml` - Central registry for all components (transforms, generators, checks, queries)
 - `tasks.py` - Invoke task definitions for automation
 - `pyproject.toml` - Project dependencies and tool configuration
+- [CODEBASE_PATTERNS.md](CODEBASE_PATTERNS.md) - Detailed AI agent knowledge base with examples and pitfalls
+
+## Component-Specific Conventions
+
+### Generators (`generators/*.py`)
+- **Class**: Extend `InfrahubGenerator`
+- **Method Signature**: `async def generate(self, data: dict[str, Any] | None = None) -> None`
+- **Query Design**: Return source data + input relationships; omit VRF, interfaces, IPs that generator creates
+- **Idempotency**: Use `client.filters()` with deterministic keys, NOT query payloads
+- **Error Handling**: Raise `RuntimeError` for missing required data; `LOG.warning()` for non-critical issues
+- **Examples**: [generators/generate_l3vpn.py](generators/generate_l3vpn.py), [generators/generate_sdwan.py](generators/generate_sdwan.py)
+
+### Transforms (`transforms/*.py`)
+- **Class**: Extend `InfrahubTransform`
+- **Query Reference**: `query = "pe"` (name from `.infrahub.yml` transforms section)
+- **Method Signature**: `async def transform(self, data: dict[str, Any]) -> str`
+- **Jinja2 Setup** (CRITICAL): Always use `autoescape=select_autoescape(disabled_extensions=("j2",), default_for_string=False)` to prevent `<`, `&`, `>` becoming HTML entities
+- **Return Value**: String (rendered device configuration)
+- **Examples**: All 9 PE/core/SD-WAN transforms share identical Jinja2 pattern
+
+### Checks (`checks/*.py`)
+- **Class**: Extend `InfrahubCheck`
+- **Query Reference**: `query = "l3vpn_overlap"` (name from `.infrahub.yml` checks section)
+- **Method Signature**: `async def validate(self, data: dict[str, Any]) -> None`
+- **Logging**: Use `self.log_error()` to fail check; `self.log_info()` for informational messages
+- **External Services**: Log once on error, return `None` (prevents double-logging)
+- **Examples**: [checks/l3vpn_overlap.py](checks/l3vpn_overlap.py) (simple), [checks/batfish_backbone.py](checks/batfish_backbone.py) (complex)
+
+### Queries (`queries/*.gql`)
+- **Generator Queries**: Return source data + input relationships; omit generated objects (breaks CoreGraphQLQueryGroupUpsert)
+- **Transform Queries**: Return device + full nested data (interfaces, processes, addresses)
+- **Validation Queries**: Return minimal data needed for checks (IDs, relationships)
+- **Variable Scoping**: Use parameters (e.g., `$name: String!`) to scope per-operation
 
 ## Testing Instructions
 
@@ -153,10 +211,14 @@ INFRAHUB_GIT_LOCAL="true"  # Use local repo instead of GitHub
 
 1. **Missing `uv sync`** - Always run after pulling changes
 2. **Missing type hints** - All functions require complete annotations
-3. **Jinja2 autoescape** - Set `autoescape=False` for device configs
+3. **Jinja2 autoescape** - Set `autoescape=select_autoescape(disabled_extensions=("j2",), default_for_string=False)` to prevent HTML entity escaping in device configs
 4. **HTML entities** - Use `get_interface_roles()` which handles HTML decoding
 5. **Missing `.infrahub.yml` entries** - Register all generators/transforms/checks
 6. **Wrong box style in Rich** - Use `box.SIMPLE` for terminal compatibility
+7. **Query Returns Generator-Created Objects** - If generator query includes VRF/interfaces/IPs that generator creates, `CoreGraphQLQueryGroupUpsert` breaks on re-run with `NodeNotFound`. Always omit generated fields from generator queries.
+8. **Forgetting `.save(allow_upsert=True)`** - Object mutations are lost on re-runs without `allow_upsert=True`
+9. **Missing Branch Parameter** - Every SDK call (`client.filters()`, `client.create()`, `client.get()`) must include `branch=self.branch`
+10. **Unsafe Unset Relationship Checks** - Unset relationships return `{"node": None}` (truthy dict). Must check: `if not (node.get("field") or {}).get("node"): continue`
 
 ## Sub-Project Guidelines
 
