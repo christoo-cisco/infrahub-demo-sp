@@ -4,11 +4,6 @@ kind: Object
 spec:
   kind: DcimDeviceType
   data:
-    - name: 7280R3
-      part_number: DCS-7280SR3
-      height: 1
-      manufacturer: Arista
-      platform: arista_eos
     - name: NCS-540
       part_number: NCS-540-ACC-SYS
       height: 1
@@ -19,18 +14,3 @@ spec:
       height: 1
       manufacturer: Juniper
       platform: juniper_junos
-    - name: 7250-IXR-R6
-      part_number: 3HE12099AA
-      height: 3
-      manufacturer: Nokia
-      platform: nokia_sros
-    - name: cEdge-1000
-      part_number: ISR1100-4G
-      height: 1
-      manufacturer: Cisco
-      platform: cisco_viptela
-    - name: FlexVNF-200
-      part_number: VFlex-200
-      height: 1
-      manufacturer: Versa Networks
-      platform: versa_flexvnf

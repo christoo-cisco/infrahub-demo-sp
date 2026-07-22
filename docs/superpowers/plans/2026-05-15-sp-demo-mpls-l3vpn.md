@@ -1176,9 +1176,9 @@ kind: Object
 spec:
   kind: LocationGeneric
   data:
-    - name: EMEA
-      shortname: emea
-      description: Europe, Middle East, Africa region.
+    - name: AMER
+      shortname: amer
+      description: North American, South America, Canada region.
 
 ---
 apiVersion: infrahub.app/v1

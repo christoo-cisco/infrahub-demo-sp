@@ -22,7 +22,7 @@ spec:
   kind: ServiceL3Vpn
   data:
     - name: kestrel-bank-mpls
-      description: Kestrel Bank branch MPLS VPN — interconnects four European branches over the Lumina backbone.
+      description: Kestrel Bank branch MPLS VPN — interconnects four American branches over the RBB backbone.
       vpn_id: 100
       address_family: ipv4
       status: draft

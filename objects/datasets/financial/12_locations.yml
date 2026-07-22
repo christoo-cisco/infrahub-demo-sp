@@ -11,11 +11,11 @@ spec:
   data:
     - name: Madrid
       shortname: mad
-      description: Madrid - Iberia hub; BME (Bolsas y Mercados) access and Southern Europe client services.
+      description: Madrid - Iberia hub; BME (Bolsas y Mercados) access and Southern USA client services.
       parent: emea
     - name: Milan
       shortname: mil
-      description: Milan - Italy hub; Borsa Italiana access and DACH/Southern Europe bridge.
+      description: Milan - Italy hub; Borsa Italiana access and DACH/Southern USA bridge.
       parent: emea
     - name: Dublin
       shortname: dub

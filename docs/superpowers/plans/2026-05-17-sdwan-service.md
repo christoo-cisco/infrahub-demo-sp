@@ -467,7 +467,7 @@ spec:
   kind: ServiceSdwan
   data:
     - name: flo-streaming-overlay
-      description: Flo Streaming any-to-any overlay across three European PoPs.
+      description: Flo Streaming any-to-any overlay across three American PoPs.
       service_id: 100
       vendor: viptela
       topology: full-mesh

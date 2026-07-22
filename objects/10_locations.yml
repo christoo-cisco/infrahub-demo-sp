@@ -4,9 +4,9 @@ kind: Object
 spec:
   kind: LocationRegion
   data:
-    - name: EMEA
-      shortname: emea
-      description: EMEA region covering the European hub offices.
+    - name: AMER
+      shortname: amer
+      description: AMER region covering the American hub offices.
 
 ---
 apiVersion: infrahub.app/v1
@@ -14,19 +14,7 @@ kind: Object
 spec:
   kind: LocationSite
   data:
-    - name: London
-      shortname: lon
-      description: London - EMEA HQ; trading floor and primary market access.
-      parent: emea
-    - name: Frankfurt
-      shortname: fra
-      description: Frankfurt - DACH hub; ECB connectivity and Eurex co-location.
-      parent: emea
-    - name: Amsterdam
-      shortname: ams
-      description: Amsterdam - Benelux hub; AMS-IX peering and DR site for London.
-      parent: emea
-    - name: Paris
-      shortname: par
-      description: Paris - Continental Europe; Euronext access and Southern Europe client services.
-      parent: emea
+    - name: Raleigh
+      shortname: rdu
+      description: Raleigh - AMER hub; RTP primary market access.
+      parent: amer

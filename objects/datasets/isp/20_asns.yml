@@ -6,6 +6,6 @@ spec:
   data:
     - name: Backbone-AS
       asn: 65000
-      description: ASN for the Lumina Networks pan-European MPLS backbone.
-      organization: Lumina Networks
-      location: emea
+      description: ASN for the RBB Networks pan-American MPLS backbone.
+      organization: RBB Networks
+      location: amer
