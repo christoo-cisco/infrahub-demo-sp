@@ -1,0 +1,33 @@
+---
+# Webhook to sync device group membership based on role + platform attributes.
+#
+# When a DcimDevice is created or updated, the webhook POSTs to a Python service
+# that reads the device's role and platform, then adds/removes it from groups:
+#   - role=pe + platform=arista_eos → pe_arista_eos
+#   - role=pe + platform=cisco_iosxr → pe_cisco_iosxr
+#   - role=pe + platform=juniper_junos → pe_juniper_junos
+#   - role=pe + platform=nokia_sros → pe_nokia_sros
+#   - role=core + platform=cisco_iosxr → core_cisco_iosxr
+#   - role=pe (any platform) → pes
+#
+# The webhook is disabled by default; enable by setting enabled: true
+# once the reconciliation service is running (see scripts/device_group_reconciler.py).
+apiVersion: infrahub.app/v1
+kind: Object
+spec:
+  kind: CoreWebhook
+  data:
+    - name: device-role-group-reconciler
+      description: Sync DcimDevice group membership based on role and platform.
+      url: "http://localhost:8050/reconcile"  # Expects reconciliation service
+      enabled: false  # Enable after starting reconciliation service
+      ssl_verify: false
+      include_payload: true
+      headers:
+        - name: Content-Type
+          value: application/json
+      trigger_events:
+        - created
+        - updated
+      target_list:
+        - name: DcimDevice

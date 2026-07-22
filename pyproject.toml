@@ -8,6 +8,7 @@ license = {text = "MIT"}
 authors = [{name = "OpsMill"}]
 
 dependencies = [
+    "aiohttp>=3.8.0",
     "flask>=3.0.0",
     "infrahub-sdk[all]>=1.21.1,<2.0.0",
     "invoke>=2.2.0",

@@ -344,6 +344,18 @@ class OrganizationManufacturer(OrganizationGeneric):
     tags: RelationshipManager
 
 
+class LocationMetro(LocationGeneric):
+    description: StringOptional
+    name: String
+    shortname: String
+    children: RelationshipManager
+    member_of_groups: RelationshipManager
+    parent: RelatedNode
+    profiles: RelationshipManager
+    subscriber_of_groups: RelationshipManager
+    tags: RelationshipManager
+
+
 class InterfacePhysical(DcimInterface, InterfaceLayer2, InterfaceLayer3, DcimEndpoint, InterfaceHasSubInterface):
     description: StringOptional
     dot1q_id: IntegerOptional
@@ -784,6 +796,17 @@ class ProfileLocationHosting(LineageSource, CoreProfile, CoreNode):
     prefixes: RelationshipManager
     related_nodes: RelationshipManager
     subscriber_of_groups: RelationshipManager
+
+
+class ProfileLocationMetro(LineageSource, CoreProfile, CoreNode):
+    description: StringOptional
+    name: StringOptional
+    profile_name: String
+    profile_priority: Integer
+    member_of_groups: RelationshipManager
+    related_nodes: RelationshipManager
+    subscriber_of_groups: RelationshipManager
+    tags: RelationshipManager
 
 
 class ProfileLocationRegion(LineageSource, CoreProfile, CoreNode):

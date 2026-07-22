@@ -339,6 +339,47 @@ def bootstrap(c: Context) -> None:
     _banner("Bootstrap complete", border="green")
 
 
+@task(name="bootstrap-webhooks")
+def bootstrap_webhooks(c: Context) -> None:
+    """Load webhook configurations (must run after bootstrap).
+
+    This task loads the device-role-group reconciliation webhook, which
+    automatically manages device group membership based on role + platform
+    attributes. The webhook is loaded but disabled by default — enable it in
+    the Infrahub UI once the reconciliation service is running.
+
+    Usage:
+        # Load webhooks
+        uv run invoke bootstrap-webhooks
+
+        # Start the reconciliation service (in another terminal)
+        uv run python scripts/device_group_reconciler.py
+
+        # Enable the webhook in the Infrahub UI
+        # (CoreWebhook → device-role-group-reconciler → enabled: true)
+    """
+    _banner("invoke bootstrap-webhooks", border="cyan")
+
+    _step("Loading device role → group reconciliation webhook")
+    c.run(
+        "uv run infrahubctl object load objects/events/01_device_role_webhook.yml",
+        pty=True,
+    )
+    _success("Webhooks loaded")
+
+    console.print()
+    _banner(
+        "Webhooks loaded (disabled by default)",
+        "To enable:\n\n"
+        "1. Start the reconciliation service:\n"
+        "   uv run python scripts/device_group_reconciler.py\n\n"
+        "2. Enable the webhook in Infrahub UI:\n"
+        "   CoreWebhook → device-role-group-reconciler → enabled: true\n\n"
+        "3. Webhook will then auto-sync device group membership on mutations",
+        border="green",
+    )
+
+
 @task(name="init")
 def init_demo(c: Context) -> None:
     """Destroy, start, and bootstrap the demo end-to-end.
