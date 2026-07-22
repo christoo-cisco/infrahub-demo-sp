@@ -205,6 +205,7 @@ def start(c: Context, build: bool = False) -> None:
 
     Set ``INFRAHUB_SERVICE_CATALOG=true`` in ``.env`` to also build and start the
     Streamlit service-catalog sidecar on every ``invoke start`` / ``invoke init``.
+    The device-group-reconciler (webhook) always runs by default.
     """
     catalog_on = INFRAHUB_SERVICE_CATALOG
     rebuild = build or catalog_on
@@ -213,16 +214,22 @@ def start(c: Context, build: bool = False) -> None:
         f"[dim]Project:[/dim]         {COMPOSE_PROJECT}\n"
         f"[dim]Compose source:[/dim] {_compose_source()}\n"
         f"[dim]Service catalog:[/dim] {'enabled' if catalog_on else 'disabled'}\n"
+        f"[dim]Device reconciler:[/dim] enabled\n"
         f"[dim]Local git:[/dim]      {'enabled' if INFRAHUB_GIT_LOCAL else 'disabled'}"
         + ("\n[yellow]Rebuild:[/yellow] enabled" if rebuild else "")
     )
     _banner("invoke start", body=body, border="green")
-    profile = "service-catalog" if catalog_on else None
-    build_arg = "--build" if rebuild else ""
-    _compose(c, f"up -d {build_arg}", profile=profile)
-    _success("Infrahub UI:      http://localhost:8000  (admin / infrahub)")
+    # Always include device-reconciler profile; optionally add service-catalog
+    profiles = ["device-reconciler"]
     if catalog_on:
-        _success("Service catalog:  http://localhost:8501")
+        profiles.append("service-catalog")
+    profile = " ".join(f"--profile {p}" for p in profiles)
+    build_arg = "--build" if rebuild else ""
+    c.run(f"{_compose_base()} {profile} up -d {build_arg}", pty=True)
+    _success("Infrahub UI:       http://localhost:8000  (admin / infrahub)")
+    _success("Device reconciler: http://localhost:8050  (webhook listener)")
+    if catalog_on:
+        _success("Service catalog:   http://localhost:8501")
 
 
 @task
@@ -230,7 +237,10 @@ def destroy(c: Context) -> None:
     """Tear down Infrahub containers and volumes."""
     _banner("invoke destroy", border="red")
     _wait("Removing containers and volumes")
-    _compose(c, "down -v", profile="service-catalog")
+    # Include both optional profiles to ensure cleanup
+    profiles = ["device-reconciler", "service-catalog"]
+    profile = " ".join(f"--profile {p}" for p in profiles)
+    c.run(f"{_compose_base()} {profile} down -v", pty=True)
     _success("Infrahub torn down")
 
 
@@ -327,6 +337,15 @@ def bootstrap(c: Context) -> None:
     c.run("uv run infrahubctl object load objects/events/00_triggers.yml", pty=True)
     _success("Event triggers loaded")
 
+    # Load the device-role-group reconciliation webhook. Enabled by default;
+    # the webhook service is running in Docker and listening on port 8050.
+    _step("Loading device-role-group reconciliation webhook")
+    c.run(
+        "uv run infrahubctl object load objects/events/01_device_role_webhook.yml",
+        pty=True,
+    )
+    _success("Webhook loaded and enabled")
+
     # Now that the generator has materialized the data the templates
     # depend on, regenerate every artifact — Infrahub's earlier
     # auto-dispatch ran against incomplete state and left artifacts in
@@ -341,43 +360,25 @@ def bootstrap(c: Context) -> None:
 
 @task(name="bootstrap-webhooks")
 def bootstrap_webhooks(c: Context) -> None:
-    """Load webhook configurations (must run after bootstrap).
+    """DEPRECATED: Webhooks are now auto-loaded during bootstrap.
 
-    This task loads the device-role-group reconciliation webhook, which
-    automatically manages device group membership based on role + platform
-    attributes. The webhook is loaded but disabled by default — enable it in
-    the Infrahub UI once the reconciliation service is running.
+    This task is kept for reference only. Device-role-group reconciliation
+    webhooks are now loaded automatically as part of the `invoke bootstrap`
+    step, and the reconciliation service runs in Docker by default.
 
-    Usage:
-        # Load webhooks
-        uv run invoke bootstrap-webhooks
-
-        # Start the reconciliation service (in another terminal)
-        uv run python scripts/device_group_reconciler.py
-
-        # Enable the webhook in the Infrahub UI
-        # (CoreWebhook → device-role-group-reconciler → enabled: true)
+    To verify webhooks are loaded:
+        1. Run `uv run invoke init` (or `uv run invoke bootstrap`)
+        2. Check Infrahub UI → Administration → Webhooks
+        3. Verify 'device-role-group-reconciler' is enabled
+        4. Check Docker: `docker ps | grep device-group-reconciler`
     """
-    _banner("invoke bootstrap-webhooks", border="cyan")
-
-    _step("Loading device role → group reconciliation webhook")
-    c.run(
-        "uv run infrahubctl object load objects/events/01_device_role_webhook.yml",
-        pty=True,
+    _banner("bootstrap-webhooks is deprecated", border="yellow")
+    console.print(
+        "[yellow]ℹ[/yellow] Webhooks are now auto-loaded during `invoke bootstrap`"
     )
-    _success("Webhooks loaded")
-
+    console.print("[yellow]ℹ[/yellow] The reconciliation service runs in Docker")
+    console.print("[yellow]ℹ[/yellow] See `docs/device-role-grouping.md` for details")
     console.print()
-    _banner(
-        "Webhooks loaded (disabled by default)",
-        "To enable:\n\n"
-        "1. Start the reconciliation service:\n"
-        "   uv run python scripts/device_group_reconciler.py\n\n"
-        "2. Enable the webhook in Infrahub UI:\n"
-        "   CoreWebhook → device-role-group-reconciler → enabled: true\n\n"
-        "3. Webhook will then auto-sync device group membership on mutations",
-        border="green",
-    )
 
 
 @task(name="init")
