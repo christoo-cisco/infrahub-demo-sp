@@ -1,10 +1,13 @@
 # Device Role → Group Reconciliation
 
-Automatically sync device group membership based on `role` and `platform` attributes.
+Automatically sync device group membership based on `role` and `platform` attributes via a webhook listener running in Docker.
 
 ## Overview
 
-This system uses Infrahub webhooks to listen for `DcimDevice` create/update events and automatically manages group membership according to these rules:
+This system provides:
+- **Reconciliation Service**: Docker container listening on port 8050
+- **Webhook Listener**: Receives `DcimDevice` create/update events from Infrahub
+- **Auto-Sync**: Device group membership updated based on role + platform rules
 
 | Role | Platform | Target Group |
 |------|----------|--------------|
@@ -17,56 +20,67 @@ This system uses Infrahub webhooks to listen for `DcimDevice` create/update even
 
 ## Setup
 
-### 1. Install Dependencies
+### 1. Start Infrahub (Device Reconciler Included)
+
+The reconciliation service runs automatically:
 
 ```bash
-uv sync
+uv run invoke init
 ```
 
-This installs `aiohttp` (added to `pyproject.toml`) and the Infrahub SDK.
-
-### 2. Load Webhook Configuration
-
-After bootstrap is complete, load the webhook definition:
+Or just start the service:
 
 ```bash
-uv run invoke bootstrap-webhooks
+uv run invoke start
 ```
 
-This creates a `CoreWebhook` object named `device-role-group-reconciler` in a **disabled** state.
+The service listens on `http://localhost:8050/reconcile`
 
-### 3. Start the Reconciliation Service
+### 2. Create Webhook in Infrahub UI
 
-In a separate terminal, start the webhook listener:
+The webhook must be configured manually via the Infrahub web interface:
 
-```bash
-# Option A: Direct Python
-uv run python scripts/device_group_reconciler.py
-
-# Option B: Via Docker Compose (if using device-reconciler profile)
-docker compose -p sp-demo --profile device-reconciler up device-group-reconciler
-```
-
-The service listens on `http://localhost:8050/reconcile` by default.
-
-### 4. Enable the Webhook in Infrahub
-
-1. Navigate to the Infrahub UI (http://localhost:8000)
-2. Open **Administration → Webhooks**
-3. Find **device-role-group-reconciler**
-4. Set **Enabled** to `true`
+1. Open Infrahub at **http://localhost:8000**
+2. Navigate to **Administration → Webhooks**
+3. Click **Create webhook**
+4. Configure:
+   - **Name**: `device-role-group-reconciler`
+   - **URL**: `http://device-group-reconciler:8050/reconcile` (Docker network URL)
+   - **Events**: Select `created` and `updated`
+   - **Target**: Select `DcimDevice`
+   - **Enabled**: `true`
 5. Save
+
+### 3. Test It
+
+Create or update a device to trigger the webhook:
+
+```bash
+# Via CLI
+curl -X PATCH http://localhost:8000/api/graphql \
+  -H "Content-Type: application/json" \
+  -H "X-Infrahub-Key: $INFRAHUB_API_TOKEN" \
+  -d '{
+    "query": "mutation { DcimDeviceUpdate(data: {id: \"<device-id>\", role: \"pe\"}) { ok } }"
+  }'
+```
+
+Or update device in the UI and check the reconciler logs:
+
+```bash
+docker logs device-group-reconciler -f
+```
 
 ## How It Works
 
-1. **Device mutation occurs** (create/update via UI, API, or bootstrap)
-2. **Infrahub webhook fires** → POST to `http://localhost:8050/reconcile`
-3. **Reconciler service receives payload** and:
+1. **Device mutation** (create/update)
+2. **Webhook fires** → POST to `http://device-group-reconciler:8050/reconcile`
+3. **Service receives payload**:
    - Fetches device details (role, platform, current groups)
-   - Determines target groups based on role + platform
+   - Determines target groups
    - Adds device to target groups
-   - Removes device from obsolete managed groups
-4. **Group membership updated** in Infrahub
+   - Removes device from obsolete groups
+4. **Group membership updated**
 
 ## Usage Examples
 

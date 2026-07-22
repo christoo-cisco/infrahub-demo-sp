@@ -205,7 +205,7 @@ def start(c: Context, build: bool = False) -> None:
 
     Set ``INFRAHUB_SERVICE_CATALOG=true`` in ``.env`` to also build and start the
     Streamlit service-catalog sidecar on every ``invoke start`` / ``invoke init``.
-    The device-group-reconciler (webhook) always runs by default.
+    The device-group-reconciler service runs by default (webhook listener on port 8050).
     """
     catalog_on = INFRAHUB_SERVICE_CATALOG
     rebuild = build or catalog_on
@@ -214,7 +214,7 @@ def start(c: Context, build: bool = False) -> None:
         f"[dim]Project:[/dim]         {COMPOSE_PROJECT}\n"
         f"[dim]Compose source:[/dim] {_compose_source()}\n"
         f"[dim]Service catalog:[/dim] {'enabled' if catalog_on else 'disabled'}\n"
-        f"[dim]Device reconciler:[/dim] enabled\n"
+        f"[dim]Device reconciler:[/dim] enabled (port 8050)\n"
         f"[dim]Local git:[/dim]      {'enabled' if INFRAHUB_GIT_LOCAL else 'disabled'}"
         + ("\n[yellow]Rebuild:[/yellow] enabled" if rebuild else "")
     )
@@ -230,6 +230,12 @@ def start(c: Context, build: bool = False) -> None:
     _success("Device reconciler: http://localhost:8050  (webhook listener)")
     if catalog_on:
         _success("Service catalog:   http://localhost:8501")
+    console.print()
+    console.print("[yellow]ℹ[/yellow] To enable device-role-group auto-syncing:")
+    console.print("  1. Open Infrahub UI → Administration → Webhooks")
+    console.print("  2. Create webhook for DcimDevice (created/updated events)")
+    console.print("  3. POST URL: http://device-group-reconciler:8050/reconcile")
+    console.print("  See docs/device-role-grouping.md for details")
 
 
 @task
@@ -336,15 +342,6 @@ def bootstrap(c: Context) -> None:
     _step("Loading event triggers (generator actions + group triggers)")
     c.run("uv run infrahubctl object load objects/events/00_triggers.yml", pty=True)
     _success("Event triggers loaded")
-
-    # Load the device-role-group reconciliation webhook. Enabled by default;
-    # the webhook service is running in Docker and listening on port 8050.
-    _step("Loading device-role-group reconciliation webhook")
-    c.run(
-        "uv run infrahubctl object load objects/events/01_device_role_webhook.yml",
-        pty=True,
-    )
-    _success("Webhook loaded and enabled")
 
     # Now that the generator has materialized the data the templates
     # depend on, regenerate every artifact — Infrahub's earlier
