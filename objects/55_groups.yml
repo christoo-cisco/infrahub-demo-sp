@@ -8,6 +8,8 @@ spec:
       description: PEs running Arista EOS.
     - name: pe_cisco_iosxr
       description: PEs running Cisco IOS-XR.
+    - name: core_cisco_iosxr
+      description: Core devices running Cisco IOS-XR.
     - name: pe_juniper_junos
       description: PEs running Juniper Junos.
     - name: pe_nokia_sros

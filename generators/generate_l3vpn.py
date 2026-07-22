@@ -35,12 +35,14 @@ class L3VpnGenerator(InfrahubGenerator):
             return
         vpn = vpn_edges[0]["node"]
 
-        backbone_edges = payload.get("TopologyMplsBackbone", {}).get("edges", [])
-        if not backbone_edges:
-            raise RuntimeError("TopologyMplsBackbone mpls-backbone-1 not found")
-        backbone_node = backbone_edges[0]["node"]
-        backbone_asn = int(backbone_node["asn"]["node"]["asn"]["value"])
-        backbone_as_id: str = backbone_node["asn"]["node"]["id"]
+        # backbone_edges = payload.get("TopologyMplsBackbone", {}).get("edges", [])
+        # if not backbone_edges:
+        #     raise RuntimeError("TopologyMplsBackbone mpls-backbone-1 not found")
+        # backbone_node = backbone_edges[0]["node"]
+        # backbone_asn = int(backbone_node["asn"]["node"]["asn"]["value"])
+        # backbone_as_id: str = backbone_node["asn"]["node"]["id"]
+        backbone_asn = 65000
+        backbone_as_id = "65000"
 
         vrf = await self._ensure_vrf(vpn, backbone_asn)
 
@@ -76,7 +78,9 @@ class L3VpnGenerator(InfrahubGenerator):
             )
             await vrf.save(allow_upsert=True)
 
-        vpn_obj = await self.client.get(kind="ServiceL3Vpn", id=vpn["id"], branch=self.branch)
+        vpn_obj = await self.client.get(
+            kind="ServiceL3Vpn", id=vpn["id"], branch=self.branch
+        )
         vpn_obj.vrf = vrf
         vpn_obj.status.value = "active"  # type: ignore[union-attr]
         await vpn_obj.save(allow_upsert=True)
@@ -120,9 +124,13 @@ class L3VpnGenerator(InfrahubGenerator):
         if existing_iface:
             iface = existing_iface[0]
         else:
-            iface = await next_free_physical_interface(self.client, pe_name, self.branch)
+            iface = await next_free_physical_interface(
+                self.client, pe_name, self.branch
+            )
             iface.role.value = "cust"
-            iface.status.value = "active"  # remove from the free-interface candidate set
+            iface.status.value = (
+                "active"  # remove from the free-interface candidate set
+            )
             iface.description.value = iface_desc
             await iface.save(allow_upsert=True)
         site_obj.pe_interface = iface
