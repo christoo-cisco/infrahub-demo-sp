@@ -30,6 +30,7 @@ from .batfish_common import SUPPORTED_PLATFORMS, Finding
 _ARTIFACT_NAME_BY_PLATFORM = {
     "arista_eos": "pe-arista-eos",
     "cisco_iosxr": "pe-cisco-iosxr",
+    "cisco_iosxr": "core-cisco-iosxr",
     "juniper_junos": "pe-juniper-junos",
 }
 

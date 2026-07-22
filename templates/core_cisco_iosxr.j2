@@ -7,16 +7,12 @@
 !
 hostname {{ device.name.value }}
 !
-route-policy PASS-ALL
-  pass
-end-policy
-!
 {# 1. Loopback interface #}
 {% for iface in device.interfaces.edges if iface.node.name.value == 'Loopback0' %}
 interface Loopback0
- description Router-ID / iBGP source
+ description {{ iface.node.description.value }}
 {% for ip in iface.node.ip_addresses.edges %}
- ipv4 address {{ m.ip_only(ip.node.address.value) }} 255.255.255.255
+ ipv4 address {{ ip.node.address.value }}
 {% endfor %}
 !
 {% endfor %}
@@ -26,7 +22,7 @@ interface {{ m.iosxr_iface(iface.node.name.value) }}
  description {{ iface.node.description.value }}
  mtu {{ iface.node.mtu.value }}
 {% for ip in iface.node.ip_addresses.edges %}
- ipv4 address {{ m.ip_only(ip.node.address.value) }} 255.255.255.254
+ ipv4 address {{ ip.node.address.value }}
 {% endfor %}
  no shutdown
 !

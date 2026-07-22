@@ -1,3 +1,8 @@
+{# Filter for IP Unnumbered addresses. #}
+{% macro ip_null(address) -%}
+{{ address.split('/')[0] }}
+{%- endmacro %}
+
 {# Format a /31 or /30 IP for vendor display (strip mask if requested). #}
 {% macro ip_only(address) -%}
 {{ address.split('/')[0] }}
