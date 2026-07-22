@@ -314,9 +314,9 @@ def bootstrap(c: Context) -> None:
     c.run("uv run python scripts/run_generator.py generate_l3vpn", pty=True)
     _success("L3VPN generator complete")
 
-    _step("Running the SD-WAN generator")
-    c.run("uv run python scripts/run_generator.py generate_sdwan", pty=True)
-    _success("SD-WAN generator complete")
+    # _step("Running the SD-WAN generator")
+    # c.run("uv run python scripts/run_generator.py generate_sdwan", pty=True)
+    # _success("SD-WAN generator complete")
 
     # Load the event triggers now that the CoreRepository has synced
     # .infrahub.yml (the run_generator steps above block until the
