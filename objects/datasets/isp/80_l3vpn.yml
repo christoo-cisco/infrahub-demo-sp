@@ -7,10 +7,8 @@ kind: Object
 spec:
   kind: IpamPrefix
   data:
-    - {prefix: 10.200.10.0/24, description: Kestrel Bank — London branch LAN, status: active, role: public}
-    - {prefix: 10.200.20.0/24, description: Kestrel Bank — Frankfurt branch LAN, status: active, role: public}
-    - {prefix: 10.200.30.0/24, description: Kestrel Bank — Amsterdam branch LAN, status: active, role: public}
-    - {prefix: 10.200.40.0/24, description: Kestrel Bank — Paris branch LAN, status: active, role: public}
+    - {prefix: 10.200.20.0/24, description: Kestrel Bank — Raleigh branch LAN, status: active, role: public}
+    - {prefix: 10.200.30.0/24, description: Kestrel Bank — Durham branch LAN, status: active, role: public}
 
 ---
 # ServiceL3Vpn + 4 branch sites (one per PE). Joining the l3vpns group
@@ -35,23 +33,13 @@ spec:
       sites:
         kind: ServiceL3VpnSite
         data:
-          - name: london-branch
-            pe_device: pe-lon-arista
-            customer_subnet: ["10.200.10.0/24", "default"]
-            routing_protocol: ebgp
-            bgp_peer_asn: 65101
-          - name: frankfurt-branch
-            pe_device: pe-fra-cisco
+          - name: raleigh-branch
+            pe_device: pe-rdu-cisco
             customer_subnet: ["10.200.20.0/24", "default"]
             routing_protocol: ebgp
             bgp_peer_asn: 65101
-          - name: amsterdam-branch
-            pe_device: pe-ams-juniper
+          - name: durham-branch
+            pe_device: pe-rdu-juniper
             customer_subnet: ["10.200.30.0/24", "default"]
-            routing_protocol: ebgp
-            bgp_peer_asn: 65101
-          - name: paris-branch
-            pe_device: pe-par-nokia
-            customer_subnet: ["10.200.40.0/24", "default"]
             routing_protocol: ebgp
             bgp_peer_asn: 65101
