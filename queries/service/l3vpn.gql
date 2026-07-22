@@ -27,19 +27,9 @@ query L3Vpn($name: String!) {
                       id
                       ... on LocationGeneric {
                         name { value }
-                        parent_location {
-                          node {
-                            id
-                          }
-                        }
                       }
                       ... on LocationSite {
                         name { value }
-                        parent_location {
-                          node {
-                            id
-                          }
-                        }
                       }
                     }
                   }
@@ -47,6 +37,27 @@ query L3Vpn($name: String!) {
               }
               customer_subnet { node { id prefix { value } } }
             }
+          }
+        }
+      }
+    }
+  }
+  LocationRegion {
+    edges {
+      node {
+        id
+        name { value }
+      }
+    }
+  }
+  LocationSite {
+    edges {
+      node {
+        id
+        name { value }
+        parent {
+          node {
+            id
           }
         }
       }

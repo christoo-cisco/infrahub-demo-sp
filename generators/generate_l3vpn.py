@@ -43,9 +43,15 @@ class L3VpnGenerator(InfrahubGenerator):
         pe_location_id = pe_location_node["id"]
         # Location name from inline fragment (LocationGeneric or LocationSite)
         pe_location_name = (pe_location_node.get("name") or {}).get("value", "unknown")
-        # Also get parent location ID if it exists (for hierarchy matching)
-        pe_parent_location = (pe_location_node.get("parent_location") or {}).get("node")
-        pe_parent_location_id = pe_parent_location["id"] if pe_parent_location else None
+
+        # Build a location hierarchy map (site -> parent region)
+        location_hierarchy: dict[str, str] = {}
+        site_edges = payload.get("LocationSite", {}).get("edges", [])
+        for site_edge in site_edges:
+            site = site_edge["node"]
+            parent = (site.get("parent") or {}).get("node")
+            if parent:
+                location_hierarchy[site["id"]] = parent["id"]
 
         # Find the RoutingAutonomousSystem for this location or its parent
         backbone_as_edges = payload.get("RoutingAutonomousSystem", {}).get("edges", [])
@@ -55,10 +61,13 @@ class L3VpnGenerator(InfrahubGenerator):
             as_location = (as_node.get("location") or {}).get("node")
             if as_location:
                 as_location_id = as_location["id"]
-                # Match if AS location matches device location or device parent location
-                if as_location_id == pe_location_id or (
-                    pe_parent_location_id and as_location_id == pe_parent_location_id
-                ):
+                # Match if AS location matches device location directly
+                if as_location_id == pe_location_id:
+                    backbone_as = as_node
+                    break
+                # Or match if AS location is the device's parent location
+                parent_location_id = location_hierarchy.get(pe_location_id)
+                if parent_location_id and as_location_id == parent_location_id:
                     backbone_as = as_node
                     break
 
