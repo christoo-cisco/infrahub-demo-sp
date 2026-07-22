@@ -168,6 +168,13 @@ spec:
             icon: carbon:cics-region-target
             kind: LocationRegion
             order_weight: 5100
+          
+          - namespace: Location
+            name: Metro
+            label: Metros
+            icon: carbon:cics-region-target
+            kind: LocationMetro
+            order_weight: 5150
 
           - namespace: Location
             name: Site

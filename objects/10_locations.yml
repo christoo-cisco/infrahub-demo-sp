@@ -18,3 +18,14 @@ spec:
       shortname: rdu
       description: Raleigh - AMER hub; RTP primary market access.
       parent: amer
+
+---
+apiVersion: infrahub.app/v1
+kind: Object
+spec:
+  kind: LocationSite
+  data:
+    - name: Research Triangle Park
+      shortname: rtp
+      description: Research Triangle Park - AMER hub; RTP primary market access.
+      parent: rdu

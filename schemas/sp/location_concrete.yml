@@ -12,6 +12,16 @@ nodes:
     include_in_menu: false
     display_label: name__value
     icon: carbon:cics-region-target
+  
+  - name: Metro
+    namespace: Location
+    label: Metro
+    inherit_from:
+      - LocationGeneric
+    menu_placement: LocationGeneric
+    include_in_menu: false
+    display_label: name__value
+    icon: carbon:cics-region-target
 
   - name: Site
     namespace: Location
