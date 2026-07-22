@@ -344,20 +344,6 @@ class OrganizationManufacturer(OrganizationGeneric):
     tags: RelationshipManager
 
 
-class TopologyMplsBackbone(CoreArtifactTarget, TopologyGeneric):
-    description: StringOptional
-    isis_area: String
-    isis_level: Dropdown
-    name: String
-    artifacts: RelationshipManager
-    asn: RelatedNode
-    location: RelatedNode
-    member_of_groups: RelationshipManager
-    pes: RelationshipManager
-    profiles: RelationshipManager
-    subscriber_of_groups: RelationshipManager
-
-
 class InterfacePhysical(DcimInterface, InterfaceLayer2, InterfaceLayer3, DcimEndpoint, InterfaceHasSubInterface):
     description: StringOptional
     dot1q_id: IntegerOptional
@@ -448,34 +434,6 @@ class IpamRouteTarget(CoreNode):
     profiles: RelationshipManager
     subscriber_of_groups: RelationshipManager
     vrf: RelationshipManager
-
-
-class ServiceSdwan(CoreNode):
-    description: StringOptional
-    name: String
-    service_id: Integer
-    status: Dropdown
-    topology: Dropdown
-    vendor: Dropdown
-    member_of_groups: RelationshipManager
-    profiles: RelationshipManager
-    sites: RelationshipManager
-    subscriber_of_groups: RelationshipManager
-    tenant: RelatedNode
-
-
-class ServiceSdwanSite(CoreNode):
-    name: String
-    role: Dropdown
-    status: Dropdown
-    lan_address: RelatedNode
-    lan_subnet: RelatedNode
-    location: RelatedNode
-    member_of_groups: RelationshipManager
-    profiles: RelationshipManager
-    sdwan: RelatedNode
-    sdwan_edge: RelatedNode
-    subscriber_of_groups: RelationshipManager
 
 
 class LocationSite(LocationGeneric, LocationHosting):
@@ -1035,54 +993,12 @@ class ProfileServiceL3VpnSite(LineageSource, CoreProfile, CoreNode):
     subscriber_of_groups: RelationshipManager
 
 
-class ProfileServiceSdwan(LineageSource, CoreProfile, CoreNode):
-    description: StringOptional
-    profile_name: String
-    profile_priority: Integer
-    status: DropdownOptional
-    topology: DropdownOptional
-    vendor: DropdownOptional
-    member_of_groups: RelationshipManager
-    related_nodes: RelationshipManager
-    subscriber_of_groups: RelationshipManager
-    tenant: RelatedNode
-
-
-class ProfileServiceSdwanSite(LineageSource, CoreProfile, CoreNode):
-    profile_name: String
-    profile_priority: Integer
-    role: DropdownOptional
-    status: DropdownOptional
-    lan_address: RelatedNode
-    lan_subnet: RelatedNode
-    location: RelatedNode
-    member_of_groups: RelationshipManager
-    related_nodes: RelationshipManager
-    sdwan_edge: RelatedNode
-    subscriber_of_groups: RelationshipManager
-
-
 class ProfileTopologyGeneric(LineageSource, CoreProfile, CoreNode):
     description: StringOptional
     profile_name: String
     profile_priority: Integer
     location: RelatedNode
     member_of_groups: RelationshipManager
-    related_nodes: RelationshipManager
-    subscriber_of_groups: RelationshipManager
-
-
-class ProfileTopologyMplsBackbone(LineageSource, CoreProfile, CoreNode):
-    description: StringOptional
-    isis_area: StringOptional
-    isis_level: DropdownOptional
-    profile_name: String
-    profile_priority: Integer
-    artifacts: RelationshipManager
-    asn: RelatedNode
-    location: RelatedNode
-    member_of_groups: RelationshipManager
-    pes: RelationshipManager
     related_nodes: RelationshipManager
     subscriber_of_groups: RelationshipManager
 
