@@ -43,16 +43,24 @@ class L3VpnGenerator(InfrahubGenerator):
         pe_location_id = pe_location_node["id"]
         # Location name from inline fragment (LocationGeneric or LocationSite)
         pe_location_name = (pe_location_node.get("name") or {}).get("value", "unknown")
+        # Also get parent location ID if it exists (for hierarchy matching)
+        pe_parent_location = (pe_location_node.get("parent_location") or {}).get("node")
+        pe_parent_location_id = pe_parent_location["id"] if pe_parent_location else None
 
-        # Find the RoutingAutonomousSystem for this location
+        # Find the RoutingAutonomousSystem for this location or its parent
         backbone_as_edges = payload.get("RoutingAutonomousSystem", {}).get("edges", [])
         backbone_as = None
         for as_edge in backbone_as_edges:
             as_node = as_edge["node"]
             as_location = (as_node.get("location") or {}).get("node")
-            if as_location and as_location["id"] == pe_location_id:
-                backbone_as = as_node
-                break
+            if as_location:
+                as_location_id = as_location["id"]
+                # Match if AS location matches device location or device parent location
+                if as_location_id == pe_location_id or (
+                    pe_parent_location_id and as_location_id == pe_parent_location_id
+                ):
+                    backbone_as = as_node
+                    break
 
         if not backbone_as:
             raise RuntimeError(

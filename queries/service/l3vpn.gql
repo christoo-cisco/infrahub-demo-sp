@@ -27,9 +27,19 @@ query L3Vpn($name: String!) {
                       id
                       ... on LocationGeneric {
                         name { value }
+                        parent_location {
+                          node {
+                            id
+                          }
+                        }
                       }
                       ... on LocationSite {
                         name { value }
+                        parent_location {
+                          node {
+                            id
+                          }
+                        }
                       }
                     }
                   }

@@ -8,3 +8,4 @@ spec:
       asn: 65000
       description: Private ASN for the Sterling Financial EMEA MPLS backbone.
       organization: Sterling Financial
+      location: emea
