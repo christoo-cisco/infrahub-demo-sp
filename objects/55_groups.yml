@@ -16,6 +16,8 @@ spec:
       description: PEs running Nokia SR OS.
     - name: pes
       description: All PE devices in the backbone.
+    - name: all_devices
+      description: All devices (target group for device group sync generator).
     #- name: topologies_mpls
     #  description: All MplsBackbone topology rows.
     # l3vpns group is populated dynamically when ServiceL3Vpn objects are created;
