@@ -112,6 +112,7 @@ generator_definitions:
     class_name: DeviceGroupSyncGenerator
     execute_in_proposed_change: false
     query: sync_device_groups
+    targets: all_devices
     description: "Sync device group membership based on role/platform attributes"
   # generate_sdwan intentionally still runs in the proposed-change pipeline —
   # the SD-WAN catalog page is built around that flow. Converting it to the
