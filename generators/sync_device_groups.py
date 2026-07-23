@@ -8,13 +8,16 @@ matching (role, platform) entries and adds the device to those groups.
 import logging
 from typing import Any
 
-from infrahub_sdk import InfrahubGenerator
+from infrahub_sdk.generator import InfrahubGenerator
 
 LOG = logging.getLogger("device-group-sync-generator")
 
 
 class DeviceGroupSyncGenerator(InfrahubGenerator):
     """Sync device group membership based on role/platform attributes."""
+
+    query = "sync_device_groups"
+    infrahub_node = "sync_device_groups"
 
     async def generate(self, data: dict[str, Any] | None = None) -> None:
         """
