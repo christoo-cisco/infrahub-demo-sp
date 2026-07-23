@@ -439,6 +439,17 @@ class LocationRegion(LocationGeneric):
     tags: RelationshipManager
 
 
+class DcimRoleGroupMapping(CoreNode):
+    description: StringOptional
+    name: String
+    platform: DropdownOptional
+    role: Dropdown
+    groups: RelationshipManager
+    member_of_groups: RelationshipManager
+    profiles: RelationshipManager
+    subscriber_of_groups: RelationshipManager
+
+
 class IpamRouteTarget(CoreNode):
     description: StringOptional
     name: String
@@ -643,6 +654,18 @@ class ProfileDcimPlatform(LineageSource, CoreProfile, CoreNode):
     profile_priority: Integer
     devices: RelationshipManager
     manufacturer: RelatedNode
+    member_of_groups: RelationshipManager
+    related_nodes: RelationshipManager
+    subscriber_of_groups: RelationshipManager
+
+
+class ProfileDcimRoleGroupMapping(LineageSource, CoreProfile, CoreNode):
+    description: StringOptional
+    platform: DropdownOptional
+    profile_name: String
+    profile_priority: Integer
+    role: DropdownOptional
+    groups: RelationshipManager
     member_of_groups: RelationshipManager
     related_nodes: RelationshipManager
     subscriber_of_groups: RelationshipManager
