@@ -10,44 +10,36 @@ spec:
       role: pe
       platform: arista_eos
       groups:
-        edges:
-          - node:
-              name: pe_arista_eos
-          - node:
-              name: pes
+        data:
+          - name: pe_arista_eos
+          - name: pes
     
     - name: pe_cisco_iosxr
       description: "Cisco IOS-XR PE devices"
       role: pe
       platform: cisco_iosxr
       groups:
-        edges:
-          - node:
-              name: pe_cisco_iosxr
-          - node:
-              name: pes
+        data:
+          - name: pe_cisco_iosxr
+          - name: pes
     
     - name: pe_juniper_junos
       description: "Juniper Junos PE devices"
       role: pe
       platform: juniper_junos
       groups:
-        edges:
-          - node:
-              name: pe_juniper_junos
-          - node:
-              name: pes
+        data:
+          - name: pe_juniper_junos
+          - name: pes
     
     - name: pe_nokia_sros
       description: "Nokia SR OS PE devices"
       role: pe
       platform: nokia_sros
       groups:
-        edges:
-          - node:
-              name: pe_nokia_sros
-          - node:
-              name: pes
+        data:
+          - name: pe_nokia_sros
+          - name: pes
     
     # Core mappings
     - name: core_cisco_iosxr
@@ -55,6 +47,5 @@ spec:
       role: core
       platform: cisco_iosxr
       groups:
-        edges:
-          - node:
-              name: core_cisco_iosxr
+        data:
+          - name: core_cisco_iosxr
