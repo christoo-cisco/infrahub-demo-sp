@@ -41,33 +41,38 @@ The service listens on `http://localhost:8050/reconcile`
 The webhook must be configured manually via the Infrahub web interface:
 
 1. Open Infrahub at **http://localhost:8000**
-2. Navigate to **Administration → Webhooks**
-3. Click **Create webhook**
+2. Navigate to **Administration → Webhooks** (or find the equivalent section in your UI)
+3. Click **Create webhook** (or **New webhook**)
 4. Configure:
    - **Name**: `device-role-group-reconciler`
    - **URL**: `http://device-group-reconciler:8050/reconcile` (Docker network URL)
    - **Events**: Select `created` and `updated`
    - **Target**: Select `DcimDevice`
-   - **Enabled**: `true`
-5. Save
+   - **Shared Key** (or **Secret**): Use any strong random string (or leave empty if your Infrahub version doesn't require it)
+5. Save and note the generated shared key
 
-### 3. Test It
+### 3. Configure Shared Key (if using authentication)
+
+If Infrahub generated a shared key, set it in your `.env` file:
+
+```bash
+WEBHOOK_SHARED_KEY=<shared-key-from-infrahub-ui>
+```
+
+Then restart the reconciler:
+
+```bash
+docker compose -p sp-demo restart device-group-reconciler
+```
+
+If your Infrahub doesn't support shared keys, you can leave `WEBHOOK_SHARED_KEY` empty (authentication will be disabled).
+
+### 4. Test It
 
 Create or update a device to trigger the webhook:
 
 ```bash
-# Via CLI
-curl -X PATCH http://localhost:8000/api/graphql \
-  -H "Content-Type: application/json" \
-  -H "X-Infrahub-Key: $INFRAHUB_API_TOKEN" \
-  -d '{
-    "query": "mutation { DcimDeviceUpdate(data: {id: \"<device-id>\", role: \"pe\"}) { ok } }"
-  }'
-```
-
-Or update device in the UI and check the reconciler logs:
-
-```bash
+# Update any device in the UI, then check the reconciler logs:
 docker logs device-group-reconciler -f
 ```
 

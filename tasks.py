@@ -234,7 +234,9 @@ def start(c: Context, build: bool = False) -> None:
     console.print("[yellow]ℹ[/yellow] To enable device-role-group auto-syncing:")
     console.print("  1. Open Infrahub UI → Administration → Webhooks")
     console.print("  2. Create webhook for DcimDevice (created/updated events)")
-    console.print("  3. POST URL: http://device-group-reconciler:8050/reconcile")
+    console.print("  3. URL: http://device-group-reconciler:8050/reconcile")
+    console.print("  4. Shared Key: Copy the key from Infrahub UI")
+    console.print("  5. Set WEBHOOK_SHARED_KEY in .env and restart reconciler")
     console.print("  See docs/device-role-grouping.md for details")
 
 

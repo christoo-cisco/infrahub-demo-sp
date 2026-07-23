@@ -52,6 +52,7 @@ INFRAHUB_API_TOKEN = os.getenv(
     "INFRAHUB_API_TOKEN", "06438eb2-8019-4776-878c-0941b1f1d1ec"
 )
 RECONCILER_PORT = int(os.getenv("RECONCILER_PORT", "8050"))
+WEBHOOK_SHARED_KEY = os.getenv("WEBHOOK_SHARED_KEY", "")
 
 # Group membership rules: (role, platform) → group_name
 ROLE_PLATFORM_GROUPS = {
@@ -187,6 +188,23 @@ async def reconcile_device_groups(
 async def webhook_handler(request: web.Request) -> web.Response:
     """Handle incoming device webhook and reconcile groups."""
     try:
+        # Verify shared key if configured
+        if WEBHOOK_SHARED_KEY:
+            auth_header = request.headers.get("Authorization", "")
+            if not auth_header.startswith("Bearer "):
+                LOG.warning("Webhook request missing Authorization header")
+                return web.json_response(
+                    {"status": "error", "reason": "unauthorized"},
+                    status=401,
+                )
+            provided_key = auth_header[7:]  # Remove "Bearer " prefix
+            if provided_key != WEBHOOK_SHARED_KEY:
+                LOG.warning(f"Webhook request with invalid Authorization token")
+                return web.json_response(
+                    {"status": "error", "reason": "unauthorized"},
+                    status=401,
+                )
+
         payload = await request.json()
         event_type = payload.get("event_type", "unknown")
         data = payload.get("data", {})
