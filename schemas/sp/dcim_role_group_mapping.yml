@@ -1,0 +1,72 @@
+---
+# yaml-language-server: $schema=https://schema.infrahub.app/infrahub/schema/latest.json
+version: "1.0"
+
+nodes:
+  - name: RoleGroupMapping
+    namespace: Dcim
+    label: Role → Group Mapping
+    description: Maps device roles to their auto-assigned groups for automation
+    icon: carbon:network-3
+    human_friendly_id:
+      - name__value
+    display_label: name__value
+    uniqueness_constraints:
+      - [name__value]
+    attributes:
+      - name: name
+        kind: Text
+        unique: true
+        description: "Mapping name, e.g., 'pe_arista_eos'"
+        order_weight: 1000
+      - name: description
+        kind: Text
+        optional: true
+        order_weight: 1100
+      - name: role
+        kind: Dropdown
+        optional: false
+        order_weight: 1200
+        description: "Device role"
+        choices:
+          - name: pe
+            label: Provider Edge
+          - name: p
+            label: Provider (Transit)
+          - name: rr
+            label: Route Reflector
+          - name: core
+            label: Core Router
+          - name: edge
+            label: Edge Router
+          - name: cpe
+            label: Customer Premise Equipment
+      - name: platform
+        kind: Dropdown
+        optional: true
+        order_weight: 1300
+        description: "Platform (optional - leave empty for all platforms)"
+        choices:
+          - name: arista_eos
+            label: Arista EOS
+          - name: cisco_iosxr
+            label: Cisco IOS-XR
+          - name: juniper_junos
+            label: Juniper Junos
+          - name: nokia_sros
+            label: Nokia SR OS
+          - name: nokia_srlinux
+            label: Nokia SR Linux
+          - name: versa
+            label: Versa Networks
+          - name: viptela
+            label: Cisco Viptela
+    relationships:
+      - name: groups
+        label: Auto-Assign Groups
+        peer: CoreStandardGroup
+        cardinality: many
+        kind: Generic
+        optional: false
+        order_weight: 2000
+        description: "Groups to automatically assign devices matching this role/platform"

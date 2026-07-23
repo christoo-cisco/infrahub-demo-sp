@@ -205,7 +205,6 @@ def start(c: Context, build: bool = False) -> None:
 
     Set ``INFRAHUB_SERVICE_CATALOG=true`` in ``.env`` to also build and start the
     Streamlit service-catalog sidecar on every ``invoke start`` / ``invoke init``.
-    The device-group-reconciler service runs by default (webhook listener on port 8050).
     """
     catalog_on = INFRAHUB_SERVICE_CATALOG
     rebuild = build or catalog_on
@@ -214,30 +213,20 @@ def start(c: Context, build: bool = False) -> None:
         f"[dim]Project:[/dim]         {COMPOSE_PROJECT}\n"
         f"[dim]Compose source:[/dim] {_compose_source()}\n"
         f"[dim]Service catalog:[/dim] {'enabled' if catalog_on else 'disabled'}\n"
-        f"[dim]Device reconciler:[/dim] enabled (port 8050)\n"
         f"[dim]Local git:[/dim]      {'enabled' if INFRAHUB_GIT_LOCAL else 'disabled'}"
         + ("\n[yellow]Rebuild:[/yellow] enabled" if rebuild else "")
     )
     _banner("invoke start", body=body, border="green")
-    # Always include device-reconciler profile; optionally add service-catalog
-    profiles = ["device-reconciler"]
+    # Optionally add service-catalog profile
+    profiles = []
     if catalog_on:
         profiles.append("service-catalog")
-    profile = " ".join(f"--profile {p}" for p in profiles)
+    profile = " ".join(f"--profile {p}" for p in profiles) if profiles else ""
     build_arg = "--build" if rebuild else ""
     c.run(f"{_compose_base()} {profile} up -d {build_arg}", pty=True)
     _success("Infrahub UI:       http://localhost:8000  (admin / infrahub)")
-    _success("Device reconciler: http://localhost:8050  (webhook listener)")
     if catalog_on:
         _success("Service catalog:   http://localhost:8501")
-    console.print()
-    console.print("[yellow]ℹ[/yellow] To enable device-role-group auto-syncing:")
-    console.print("  1. Open Infrahub UI → Administration → Webhooks")
-    console.print("  2. Create webhook for DcimDevice (created/updated events)")
-    console.print("  3. URL: http://device-group-reconciler:8050/reconcile")
-    console.print("  4. Shared Key: Copy the key from Infrahub UI")
-    console.print("  5. Set WEBHOOK_SHARED_KEY in .env and restart reconciler")
-    console.print("  See docs/device-role-grouping.md for details")
 
 
 @task
@@ -245,8 +234,8 @@ def destroy(c: Context) -> None:
     """Tear down Infrahub containers and volumes."""
     _banner("invoke destroy", border="red")
     _wait("Removing containers and volumes")
-    # Include both optional profiles to ensure cleanup
-    profiles = ["device-reconciler", "service-catalog"]
+    # Include optional profiles to ensure cleanup
+    profiles = ["service-catalog"]
     profile = " ".join(f"--profile {p}" for p in profiles)
     c.run(f"{_compose_base()} {profile} down -v", pty=True)
     _success("Infrahub torn down")
@@ -355,29 +344,6 @@ def bootstrap(c: Context) -> None:
 
     console.print()
     _banner("Bootstrap complete", border="green")
-
-
-@task(name="bootstrap-webhooks")
-def bootstrap_webhooks(c: Context) -> None:
-    """DEPRECATED: Webhooks are now auto-loaded during bootstrap.
-
-    This task is kept for reference only. Device-role-group reconciliation
-    webhooks are now loaded automatically as part of the `invoke bootstrap`
-    step, and the reconciliation service runs in Docker by default.
-
-    To verify webhooks are loaded:
-        1. Run `uv run invoke init` (or `uv run invoke bootstrap`)
-        2. Check Infrahub UI → Administration → Webhooks
-        3. Verify 'device-role-group-reconciler' is enabled
-        4. Check Docker: `docker ps | grep device-group-reconciler`
-    """
-    _banner("bootstrap-webhooks is deprecated", border="yellow")
-    console.print(
-        "[yellow]ℹ[/yellow] Webhooks are now auto-loaded during `invoke bootstrap`"
-    )
-    console.print("[yellow]ℹ[/yellow] The reconciliation service runs in Docker")
-    console.print("[yellow]ℹ[/yellow] See `docs/device-role-grouping.md` for details")
-    console.print()
 
 
 @task(name="init")
@@ -635,7 +601,6 @@ ns.add_task(info)
 ns.add_task(start)
 ns.add_task(destroy)
 ns.add_task(bootstrap)
-ns.add_task(bootstrap_webhooks)
 ns.add_task(init_demo)
 ns.add_task(lint)
 ns.add_task(test)

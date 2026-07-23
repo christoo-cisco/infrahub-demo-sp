@@ -1,0 +1,46 @@
+---
+apiVersion: infrahub.app/v1
+kind: Object
+spec:
+  kind: DcimRoleGroupMapping
+  data:
+    # PE mappings
+    - name: pe_arista_eos
+      description: "Arista EOS PE devices"
+      role: pe
+      platform: arista_eos
+      groups:
+        - name: pe_arista_eos
+        - name: pes
+    
+    - name: pe_cisco_iosxr
+      description: "Cisco IOS-XR PE devices"
+      role: pe
+      platform: cisco_iosxr
+      groups:
+        - name: pe_cisco_iosxr
+        - name: pes
+    
+    - name: pe_juniper_junos
+      description: "Juniper Junos PE devices"
+      role: pe
+      platform: juniper_junos
+      groups:
+        - name: pe_juniper_junos
+        - name: pes
+    
+    - name: pe_nokia_sros
+      description: "Nokia SR OS PE devices"
+      role: pe
+      platform: nokia_sros
+      groups:
+        - name: pe_nokia_sros
+        - name: pes
+    
+    # Core mappings
+    - name: core_cisco_iosxr
+      description: "Cisco IOS-XR Core devices"
+      role: core
+      platform: cisco_iosxr
+      groups:
+        - name: core_cisco_iosxr

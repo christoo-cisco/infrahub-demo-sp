@@ -1,0 +1,58 @@
+query GetDevicesForGroupSync {
+  DcimDevice(first: 1000) {
+    edges {
+      node {
+        id
+        name {
+          value
+        }
+        role {
+          value
+        }
+        platform {
+          node {
+            name {
+              value
+            }
+          }
+        }
+        member_of_groups {
+          edges {
+            node {
+              id
+              name {
+                value
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  DcimRoleGroupMapping(first: 1000) {
+    edges {
+      node {
+        id
+        name {
+          value
+        }
+        role {
+          value
+        }
+        platform {
+          value
+        }
+        groups {
+          edges {
+            node {
+              id
+              name {
+                value
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

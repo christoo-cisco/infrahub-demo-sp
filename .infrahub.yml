@@ -14,6 +14,7 @@ queries:
   - {name: l3vpn, file_path: queries/service/l3vpn.gql}
   - {name: pe, file_path: queries/config/pe.gql}
   - {name: core, file_path: queries/config/core.gql}
+  - {name: sync_device_groups, file_path: queries/automation/sync_device_groups.gql}
   #- {name: clab_topology, file_path: queries/topology/clab.gql}
   - {name: l3vpn_overlap, file_path: queries/validation/l3vpn_overlap.gql}
   - {name: l3vpn_site_subnet, file_path: queries/validation/l3vpn_site_subnet.gql}
@@ -106,6 +107,12 @@ generator_definitions:
     execute_in_proposed_change: false
     parameters:
       name: name__value
+  - name: sync_device_groups
+    file_path: generators/sync_device_groups.py
+    class_name: DeviceGroupSyncGenerator
+    execute_in_proposed_change: false
+    query: sync_device_groups
+    description: "Sync device group membership based on role/platform attributes"
   # generate_sdwan intentionally still runs in the proposed-change pipeline —
   # the SD-WAN catalog page is built around that flow. Converting it to the
   # event-driven trigger pattern (like generate_l3vpn) is a tracked follow-up.
